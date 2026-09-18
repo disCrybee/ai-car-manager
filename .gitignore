@@ -1,0 +1,23 @@
+# Секрети
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Дані клієнтів / пам'ять діалогів
+data/dialog_memory.json
+
+# Логи
+*.log
+
+# IDE / Windows
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
