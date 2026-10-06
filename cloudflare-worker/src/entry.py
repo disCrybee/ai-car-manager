@@ -1,12 +1,18 @@
-from workers import Response, WorkerEntrypoint
-from uuid import uuid4
-from urllib.parse import urlparse
+﻿from workers import WorkerEntrypoint, Response
+
 
 class Default(WorkerEntrypoint):
     async def fetch(self, request):
-        url = urlparse(request.url)
-        if url.path == '/message':
-            return Response('Hello, World!')
-        if url.path == '/random':
-            return Response(str(uuid4()))
-        return Response('Not Found', status=404)
+        url = str(request.url)
+
+        if "/health" in url:
+            return Response.json({
+                "ok": True,
+                "service": "auction-auto-bot",
+                "runtime": "cloudflare-python-worker"
+            })
+
+        return Response(
+            "Auction Auto Worker is running",
+            status=200
+        )
