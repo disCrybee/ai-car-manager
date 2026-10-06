@@ -1,21 +1,11 @@
-/**
- * Auction Auto Telegram bot — Cloudflare Python Worker
- */
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "auction-auto-bot",
   "main": "src/entry.py",
-  "compatibility_date": "2026-10-01",
+  "compatibility_date": "2026-10-06",
   "compatibility_flags": [
     "python_workers"
   ],
-  "assets": {
-    "directory": "./public",
-    "run_worker_first": [
-      "/telegram-webhook",
-      "/health"
-    ]
-  },
   "observability": {
     "enabled": true
   }
