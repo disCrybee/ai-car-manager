@@ -19,14 +19,6 @@ class Default(WorkerEntrypoint):
         if request.method != "POST":
             return Response("Method Not Allowed", status=405)
 
-        expected_secret = str(self.env.WEBHOOK_SECRET)
-        received_secret = request.headers.get(
-            "X-Telegram-Bot-Api-Secret-Token"
-        )
-
-        if received_secret != expected_secret:
-            return Response("Unauthorized", status=403)
-
         try:
             update = await request.json()
         except Exception:
