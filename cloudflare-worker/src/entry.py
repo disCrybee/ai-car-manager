@@ -116,61 +116,144 @@ def detect_brand(text: str):
     return None
 
 
-def detect_model(text: str, brand: str | None):
+def looks_like_year_only_reply(text: str) -> bool:
+    clean = normalize(text).lower()
+    return bool(
+        re.fullmatch(
+            r"(?:19[8-9]\d|20[0-3]\d)(?:\s*\+)?"
+            r"(?:\s*[-–—/]\s*(?:19[8-9]\d|20[0-3]\d))?"
+            r"(?:\s*(?:рік|року|роки|р\.|год|года|годы))?",
+            clean,
+        )
+    )
+
+
+def looks_like_mileage_reply(text: str) -> bool:
+    low = text.lower()
+    return (
+        any(x in low for x in ("км", "миль", "mile", "пробіг", "пробег"))
+        and bool(re.search(r"\d", low))
+    )
+
+
+def looks_like_budget_reply(text: str) -> bool:
+    low = text.lower()
+    return (
+        any(x in low for x in ("$", "usd", "дол", "бюджет", "під ключ", "под ключ"))
+        and bool(re.search(r"\d", low))
+    )
+
+
+def looks_like_consultation_question(text: str) -> bool:
+    low = normalize(text).lower()
+
+    if "?" in text:
+        return True
+
+    question_starts = (
+        "який ", "яка ", "яке ", "які ", "скільки ", "що ", "чим ",
+        "чому ", "коли ", "де ", "чи ",
+        "какой ", "какая ", "какое ", "какие ", "сколько ", "что ",
+        "чем ", "почему ", "когда ", "где ", "есть ли ",
+    )
+
+    if any(low.startswith(x) for x in question_starts):
+        return True
+
+    consultation_words = (
+        "характерист", "комплектац", "двигун", "двигатель", "коробк",
+        "батаре", "запас хода", "запас ходу", "надійн", "надежн",
+        "ресурс", "різниц", "разниц", "відрізня", "отлича",
+        "рестайл", "поколін", "поколен", "вартіст", "стоимост",
+        "ціна", "цена",
+    )
+
+    return any(word in low for word in consultation_words)
+
+
+def clean_model_candidate(text: str, brand: str | None = None):
+    clean = normalize(text).strip(" ,.!?:;")
+
+    if not clean or len(clean) > 60:
+        return None
+
+    if (
+        looks_like_year_only_reply(clean)
+        or looks_like_mileage_reply(clean)
+        or looks_like_budget_reply(clean)
+    ):
+        return None
+
+    clean = re.sub(
+        r"\b(?:19[8-9]\d|20[0-3]\d)(?:\s*\+)?"
+        r"(?:\s*[-–—/]\s*(?:19[8-9]\d|20[0-3]\d))?\b",
+        " ",
+        clean,
+    )
+    clean = normalize(clean).strip(" ,.!?:;")
+    low = clean.lower()
+
+    for prefix in (
+        "цікавить ", "интересует ", "хочу ", "шукаю ", "ищу ",
+        "автомобіль ", "автомобиль ", "машина ", "модель ",
+    ):
+        if low.startswith(prefix):
+            clean = clean[len(prefix):].strip()
+            low = clean.lower()
+            break
+
+    if brand:
+        for alias, canonical in sorted(
+            BRANDS.items(),
+            key=lambda item: len(item[0]),
+            reverse=True,
+        ):
+            if canonical != brand:
+                continue
+
+            clean = re.sub(
+                re.escape(alias),
+                " ",
+                clean,
+                flags=re.IGNORECASE,
+            )
+
+        clean = normalize(clean).strip(" ,.!?:;")
+
+    if not clean or len(clean.split()) > 4:
+        return None
+
+    if not re.search(r"[A-Za-zА-Яа-яЁёІіЇїЄєҐґ0-9]", clean):
+        return None
+
+    return clean
+
+
+def extract_model_from_message(text: str, memory: dict):
     clean = normalize(text)
+    brand = memory.get("brand") or detect_brand(clean)
+    last_topic = memory.get("last_question_topic")
 
-    if brand == "BMW":
-        m = re.search(
-            r"(?i)\b(?:BMW\s*)?(XM|X[1-7]|i[357X]|M[23458]|[1-8]\d{2}[a-z]{0,3})\b",
-            clean,
-        )
-        if m:
-            value = m.group(1)
-            return value.upper() if value.lower().startswith(("x", "m")) else value
+    # Same principle as the local version:
+    # short reply after "which model?" is the model.
+    if last_topic == "model" and "?" not in clean:
+        return clean_model_candidate(clean, brand)
 
-    if brand == "Tesla":
-        m = re.search(r"(?i)\bModel\s*(3|S|X|Y)\b", clean)
-        if m:
-            return f"Model {m.group(1).upper()}"
+    detected_brand = detect_brand(clean)
 
-    if brand == "Rivian":
-        m = re.search(r"(?i)\b(R1S|R1T|R2|R3)\b", clean)
-        if m:
-            return m.group(1).upper()
+    # Mercedes Benz E-class / BMW 540 / Subaru Crosstrek / ...
+    if detected_brand:
+        candidate = clean_model_candidate(clean, detected_brand)
+        if candidate and candidate.lower() != detected_brand.lower():
+            return candidate
 
-    if brand == "Mercedes-Benz":
-        # US auction naming: G63 / G 63 / G63 AMG / AMG G63,
-        # G550, G500, G65 etc. Works both when brand is in the
-        # same message and when the client sends only "G63" next.
-        m = re.search(
-            r"(?i)\b(?:AMG\s*)?G\s*-?\s*(63|65|55|550|500)(?:\s*AMG)?\b",
-            clean,
-        )
-        if m:
-            number = m.group(1)
-            return f"G{number}"
-
-        m = re.search(
-            r"(?i)\b(?:GLC|GLE|GLS|CLA|CLS|CLE|EQS|EQE|EQB|EQA|SL|S|E|C|A)\s*-?\s*(\d{2,3})\b",
-            clean,
-        )
-        if m:
-            full = m.group(0).upper().replace(" ", "").replace("-", "")
-            return full
-
-    common = [
-        "Corsair", "Navigator", "Aviator",
-        "Camry", "RAV4", "Highlander",
-        "Crosstrek", "Forester", "Outback",
-        "Leaf", "Ariya", "Rogue",
-        "Mustang Mach-E", "Mach-E", "Edge", "Escape",
-        "Ioniq 5", "Kona", "Niro", "EV6", "EV9",
-        "ID.4", "Tiguan", "Touareg",
-        "Escalade", "Cherokee", "Grand Cherokee",
-    ]
-    for model in common:
-        if model.lower() in clean.lower():
-            return model
+    # Brand is known and model is still missing: "G63", "W214", "X5".
+    if (
+        brand
+        and not memory.get("model")
+        and not looks_like_consultation_question(clean)
+    ):
+        return clean_model_candidate(clean, brand)
 
     return None
 
@@ -378,16 +461,103 @@ def main_keyboard():
     }
 
 
+def detect_question_topic(answer: str):
+    questions = re.findall(r"[^?]*\?", answer, flags=re.DOTALL)
+    if not questions:
+        return None
+
+    q = normalize(questions[-1]).lower()
+
+    priority = (
+        ("model", ("модел", "model", "який клас", "какой класс")),
+        ("brand", ("марка", "бренд", "brand")),
+        ("year", ("який рік", "які роки", "року", "років", "рік", "какой год", "какие годы", "года", "год")),
+        ("mileage", ("пробіг", "пробег", "кілометр", "миль")),
+        ("trim", ("комплектац", "максимал", "предтоп", "пред-топ", "опції", "опции")),
+        ("engine", ("двигун", "двигатель", "мотор", "бензин", "дизел")),
+        ("drive", ("привід", "привод", "xdrive", "awd", "fwd", "rwd")),
+        ("battery", ("батаре", "квт", "kwh")),
+        ("color", ("колір", "цвет")),
+        ("budget", ("бюджет", "під ключ", "под ключ")),
+    )
+
+    for topic, markers in priority:
+        if any(marker in q for marker in markers):
+            return topic
+
+    return None
+
+
+def remember_assistant_question(memory: dict, answer: str):
+    asked = list(memory.get("asked_questions") or [])
+
+    for part in re.split(r"(?<=[?])\s+|\n+", answer):
+        part = normalize(part)
+
+        if "?" in part and part not in asked:
+            asked.append(part)
+
+    memory["asked_questions"] = asked[-14:]
+    memory["last_question_topic"] = detect_question_topic(answer)
+    return memory
+
+
+def store_contextual_answer(memory: dict, text: str):
+    topic = memory.get("last_question_topic")
+    clean = normalize(text)
+
+    if not topic or not clean or "?" in clean or len(clean) > 100:
+        return
+
+    if topic == "model":
+        candidate = clean_model_candidate(clean, memory.get("brand"))
+        if candidate:
+            memory["model"] = candidate
+
+    elif topic == "year":
+        years = detect_years(clean)
+        if years:
+            memory["years"] = years
+
+    elif topic == "mileage":
+        memory["mileage"] = clean
+
+    elif topic == "trim":
+        memory["trim"] = clean
+
+    elif topic == "budget":
+        memory["budget"] = clean
+
+    elif topic == "engine":
+        memory["engine"] = clean
+
+    elif topic == "drive":
+        memory["drive"] = clean
+
+    elif topic == "battery":
+        memory["battery"] = clean
+
+    elif topic == "color":
+        memory["color"] = clean
+
+
 def update_memory(memory: dict, text: str):
     memory = dict(memory or {})
     changed = set()
+
+    memory.setdefault("asked_questions", [])
+    memory.setdefault("last_question_topic", None)
+
+    # Local-version behaviour: short reply is interpreted
+    # according to the assistant's previous question.
+    store_contextual_answer(memory, text)
 
     brand = detect_brand(text)
     if brand and brand != memory.get("brand"):
         memory["brand"] = brand
         changed.add("brand")
 
-    model = detect_model(text, brand or memory.get("brand"))
+    model = extract_model_from_message(text, memory)
     if model and model != memory.get("model"):
         memory["model"] = model
         changed.add("model")
@@ -450,7 +620,7 @@ def vehicle_label(memory: dict) -> str:
 
 
 def qualification_reply(memory: dict, state: dict, changed: set, user_text: str):
-    if is_question(user_text):
+    if looks_like_consultation_question(user_text):
         return None
 
     brand = memory.get("brand")
@@ -941,6 +1111,7 @@ class Default(WorkerEntrypoint):
                 "admin_configured": admin_ok,
                 "async_webhook": True,
                 "lead_flow": True,
+                "local_dialog_logic": True,
             })
 
         if path != "/telegram-webhook":
@@ -1332,6 +1503,11 @@ class Default(WorkerEntrypoint):
                             "Зараз AI тимчасово недоступний, але Ваші параметри вже збережені. "
                             "Можете продовжувати діалог або повторити повідомлення трохи пізніше."
                         )
+
+            memory = remember_assistant_question(
+                memory,
+                answer,
+            )
 
             final_history = [
                 *history_with_user,
