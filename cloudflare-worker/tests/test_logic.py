@@ -1,0 +1,71 @@
+import os
+import sys
+import unittest
+
+HERE = os.path.dirname(__file__)
+SRC = os.path.abspath(os.path.join(HERE, "..", "src"))
+if SRC not in sys.path:
+    sys.path.insert(0, SRC)
+
+from utils import is_affirmative, is_negative
+from vehicle_logic import (
+    explicit_selection_intent,
+    extract_deterministic,
+    new_memory,
+    next_question,
+    qualification_ready,
+)
+
+
+class DialogLogicTests(unittest.TestCase):
+    def test_audi_ukrainian_brand_and_model(self):
+        memory, _ = extract_deterministic(new_memory(), "Ауді A4")
+        self.assertEqual(memory["brand"], "Audi")
+        self.assertEqual(memory["model"], "A4")
+        topic, _ = next_question(memory)
+        self.assertEqual(topic, "year")
+
+    def test_mercedes_e_class(self):
+        memory, _ = extract_deterministic(new_memory(), "Mercedes Benz E-class")
+        self.assertEqual(memory["brand"], "Mercedes-Benz")
+        self.assertEqual(memory["model"], "E-class")
+
+    def test_cadillac_reference_flow(self):
+        memory, _ = extract_deterministic(new_memory(), "Cadillac Escalade")
+        self.assertEqual(memory["brand"], "Cadillac")
+        self.assertEqual(memory["model"], "Escalade")
+
+        memory["last_question_topic"] = "year"
+        memory, _ = extract_deterministic(memory, "2012")
+        self.assertEqual(memory["year"], "2012")
+
+        memory["last_question_topic"] = "mileage"
+        memory, _ = extract_deterministic(memory, "до 200.000 км")
+        self.assertIn("200000", memory["mileage"])
+
+        memory["last_question_topic"] = "trim"
+        memory, _ = extract_deterministic(memory, "Максимальна")
+        self.assertEqual(memory["trim"], "Максимальна")
+        self.assertTrue(qualification_ready(memory))
+
+    def test_year_range_is_not_model(self):
+        memory, _ = extract_deterministic(new_memory(), "Audi A4")
+        memory["last_question_topic"] = "year"
+        memory, _ = extract_deterministic(memory, "2015-2017")
+        self.assertEqual(memory["model"], "A4")
+        self.assertEqual(memory["year"], "2015-2017")
+
+    def test_yes_no(self):
+        self.assertTrue(is_affirmative("Так, давайте"))
+        self.assertTrue(is_affirmative("Да"))
+        self.assertTrue(is_negative("Ні, дякую"))
+        self.assertTrue(is_negative("Нет"))
+
+    def test_explicit_order_intent(self):
+        self.assertTrue(explicit_selection_intent("Хочу замовити авто"))
+        self.assertTrue(explicit_selection_intent("Пригін під ключ"))
+        self.assertFalse(explicit_selection_intent("Яка вартість під ключ?"))
+
+
+if __name__ == "__main__":
+    unittest.main()

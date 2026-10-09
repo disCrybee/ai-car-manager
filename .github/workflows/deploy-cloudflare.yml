@@ -33,6 +33,12 @@ jobs:
       - name: Setup uv
         uses: astral-sh/setup-uv@v6
 
+      - name: Syntax check
+        run: uv run python -m py_compile src/*.py
+
+      - name: Test dialog logic
+        run: uv run python -m unittest discover -s tests -v
+
       - name: Install Node dependencies
         run: npm ci
 

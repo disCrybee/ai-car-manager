@@ -1,0 +1,581 @@
+import re
+
+from config import BRAND_ALIASES, REQUIRED_FIELDS
+from utils import detect_language, normalize
+
+
+NO_PREFERENCE = {
+    "не знаю", "неважливо", "не важливо", "без різниці", "будь-який",
+    "будь яка", "будь-яка", "любой", "любая", "без разницы", "не принципиально",
+    "не принципово", "не имеет значения", "немає значення",
+}
+
+QUESTION_STARTS = (
+    "який ", "яка ", "яке ", "які ", "скільки ", "що ", "чим ", "чому ",
+    "коли ", "де ", "чи ", "какой ", "какая ", "какое ", "какие ",
+    "сколько ", "что ", "чем ", "почему ", "когда ", "где ", "есть ли ",
+    "what ", "which ", "how ",
+)
+
+CONSULT_WORDS = (
+    "комплектац", "trim", "двигун", "двигатель", "engine", "мотор",
+    "короб", "transmission", "cvt", "автомат", "батар", "kwh", "квт",
+    "потуж", "мощност", "horsepower", "привід", "привод", "awd", "rwd",
+    "fwd", "4wd", "запас ходу", "range", "розгін", "разгон", "0-100",
+    "0-60", "надійн", "надежн", "ресурс", "проблем", "болячк", "слабк",
+    "різниц", "разниц", "відрізня", "отлича", "рестайл", "поколін",
+    "поколен", "роки випуску", "годы выпуска", "який кузов", "какой кузов",
+)
+
+
+def new_memory() -> dict:
+    return {
+        "brand": None,
+        "model": None,
+        "year": None,
+        "mileage": None,
+        "trim": None,
+        "budget": None,
+        "engine": None,
+        "drive": None,
+        "battery": None,
+        "color": None,
+        "body_type": None,
+        "language": "uk",
+        "last_question_topic": None,
+        "preferences": [],
+        "client_facts": [],
+        "logistics_location": None,
+    }
+
+
+def normalize_memory(memory: dict | None) -> dict:
+    result = new_memory()
+    result.update(memory or {})
+
+    # Migration from older cloud/local structures.
+    if not result.get("year"):
+        years = result.get("years")
+        if isinstance(years, list) and years:
+            result["year"] = "-".join(str(x) for x in years)
+        elif years:
+            result["year"] = str(years)
+
+    result.pop("years", None)
+
+    if not isinstance(result.get("preferences"), list):
+        result["preferences"] = []
+    if not isinstance(result.get("client_facts"), list):
+        result["client_facts"] = []
+
+    return result
+
+
+def detect_brand(text: str):
+    low = normalize(text).lower()
+
+    for alias in sorted(BRAND_ALIASES, key=len, reverse=True):
+        pattern = rf"(?<![\w]){re.escape(alias)}(?![\w])"
+        if re.search(pattern, low, flags=re.IGNORECASE):
+            return BRAND_ALIASES[alias]
+
+    return None
+
+
+def is_question(text: str) -> bool:
+    clean = normalize(text)
+    low = clean.lower()
+
+    if "?" in clean:
+        return True
+
+    if any(low.startswith(prefix) for prefix in QUESTION_STARTS):
+        return True
+
+    return any(word in low for word in CONSULT_WORDS)
+
+
+def is_consultation_question(text: str) -> bool:
+    return is_question(text) and any(
+        word in normalize(text).lower()
+        for word in CONSULT_WORDS
+    )
+
+
+def is_factual_vehicle_question(text: str) -> bool:
+    low = normalize(text).lower()
+    factual = (
+        "комплектац", "trim", "двигун", "двигатель", "engine", "мотор",
+        "короб", "transmission", "cvt", "автомат", "батар", "kwh", "квт",
+        "потуж", "мощност", "horsepower", "привід", "привод", "awd", "rwd",
+        "fwd", "4wd", "запас ходу", "range", "розгін", "разгон", "0-100",
+        "0-60", "роки випуску", "годы выпуска", "рестайл", "поколін",
+        "поколен", "який кузов", "какой кузов",
+    )
+    return is_question(text) and any(word in low for word in factual)
+
+
+def _remove_brand_aliases(text: str, brand: str | None) -> str:
+    result = text
+    if not brand:
+        return result
+
+    for alias, canonical in sorted(
+        BRAND_ALIASES.items(),
+        key=lambda item: len(item[0]),
+        reverse=True,
+    ):
+        if canonical != brand:
+            continue
+        result = re.sub(
+            rf"(?<![\w]){re.escape(alias)}(?![\w])",
+            " ",
+            result,
+            flags=re.IGNORECASE,
+        )
+
+    return normalize(result)
+
+
+def _strip_intro(text: str) -> str:
+    result = normalize(text)
+    result = re.sub(
+        r"(?i)^(?:"
+        r"мене\s+цікавить|меня\s+интересует|"
+        r"цікавить|интересует|"
+        r"хочу|шукаю|ищу|"
+        r"автомобіль|автомобиль|машина|модель"
+        r")\s*[,;:\-]?\s*",
+        "",
+        result,
+    )
+    return normalize(result)
+
+
+def parse_year(text: str):
+    clean = normalize(text)
+
+    plus = re.search(r"\b((?:19[8-9]\d|20[0-3]\d))\s*\+", clean)
+    if plus:
+        return f"{plus.group(1)}+"
+
+    rng = re.search(
+        r"\b((?:19[8-9]\d|20[0-3]\d))\s*[-–—/]\s*((?:19[8-9]\d|20[0-3]\d))\b",
+        clean,
+    )
+    if rng:
+        return f"{rng.group(1)}-{rng.group(2)}"
+
+    one = re.search(r"\b(?:19[8-9]\d|20[0-3]\d)\b", clean)
+    if one:
+        return one.group(0)
+
+    return None
+
+
+def parse_mileage(text: str, expected: bool = False):
+    clean = normalize(text)
+    low = clean.lower()
+
+    if expected and low in NO_PREFERENCE:
+        return "без обмежень" if "не " not in low or "разниц" not in low else "без обмежень"
+
+    if not expected and not any(
+        marker in low
+        for marker in ("км", "миль", "mile", "пробіг", "пробег")
+    ):
+        return None
+
+    match = re.search(
+        r"(?i)(до\s*)?(\d{1,3}(?:[ .]\d{3})+|\d{3,6})\s*(тис\.?\s*)?(км|миль|miles?|mi)?",
+        clean,
+    )
+    if not match:
+        return clean if expected and len(clean) <= 80 else None
+
+    number = match.group(2).replace(" ", "").replace(".", "")
+    if match.group(3):
+        try:
+            number = str(int(number) * 1000)
+        except Exception:
+            pass
+
+    unit = match.group(4) or ("км" if "км" in low else "")
+    prefix = "до " if match.group(1) or low.startswith("до ") else ""
+    return normalize(f"{prefix}{number} {unit}")
+
+
+def parse_drive(text: str):
+    low = normalize(text).lower()
+    if any(x in low for x in ("повний привід", "полный привод", "awd", "xdrive", "4wd", "quattro", "4matic")):
+        return "AWD"
+    if any(x in low for x in ("задній привід", "задний привод", "rwd")):
+        return "RWD"
+    if any(x in low for x in ("передній привід", "передний привод", "fwd")):
+        return "FWD"
+    return None
+
+
+def parse_budget(text: str):
+    clean = normalize(text)
+    low = clean.lower()
+
+    if not any(x in low for x in ("$", "usd", "дол", "бюдж", "під ключ", "под ключ")):
+        return None
+
+    match = re.search(
+        r"(?i)(?:\$\s*)?(\d{1,3}(?:[ .]\d{3})+|\d{4,6})\s*(?:\$|usd|дол(?:ар(?:ів|ов)?)?)?",
+        clean,
+    )
+    if not match:
+        return clean[:100]
+
+    number = match.group(1).replace(" ", "").replace(".", "")
+    suffix = " під ключ" if "під ключ" in low else (" под ключ" if "под ключ" in low else "")
+    return f"${number}{suffix}"
+
+
+def _clean_model_candidate(text: str, brand: str | None):
+    clean = _strip_intro(text)
+    clean = _remove_brand_aliases(clean, brand)
+
+    # Cut everything after clearly separate qualification details.
+    cut = re.search(
+        r"(?i)(?:"
+        r"\b(?:19[8-9]\d|20[0-3]\d)\b|"
+        r"\bдо\s+\d|"
+        r"\b\d{3,6}\s*(?:км|миль|mi|miles)\b|"
+        r"\b(?:повний|полный|передній|передний|задній|задний)\s+прив|"
+        r"\b(?:awd|rwd|fwd|4wd|xdrive|quattro|4matic)\b|"
+        r"\b(?:бюджет|budget)\b"
+        r")",
+        clean,
+    )
+    if cut:
+        clean = clean[:cut.start()]
+
+    clean = clean.strip(" ,.!?:;-/")
+    clean = normalize(clean)
+
+    if not clean or len(clean) > 70 or len(clean.split()) > 5:
+        return None
+
+    if clean.lower() in NO_PREFERENCE:
+        return None
+
+    if not re.search(r"[A-Za-zА-Яа-яЁёІіЇїЄєҐґ0-9]", clean):
+        return None
+
+    return clean
+
+
+def parse_trim(text: str, expected: bool = False):
+    clean = normalize(text)
+    low = clean.lower()
+
+    if expected:
+        if low in NO_PREFERENCE:
+            return "без конкретних побажань"
+        if not is_question(clean) and len(clean) <= 100:
+            return clean
+        return None
+
+    markers = (
+        "максим", "топ", "предтоп", "пред-топ", "base", "базов",
+        "limited", "premium", "sport", "performance", "platinum",
+        "lariat", "sel", "xle", "xse", "touring", "luxury", "prestige",
+        "gt-line", "gt line", "wind", "wave", "ultimate",
+    )
+    if any(x in low for x in markers) and not is_question(clean):
+        return clean[:100]
+
+    return None
+
+
+def parse_engine(text: str):
+    low = normalize(text).lower()
+    if any(x in low for x in ("двигун", "двигатель", "мотор", "бензин", "дизел", "гібрид", "гибрид", "v6", "v8", "i4", "i6")):
+        return normalize(text)[:120]
+    return None
+
+
+def parse_battery(text: str):
+    low = normalize(text).lower()
+    if any(x in low for x in ("батар", "kwh", "квт", "квт·год", "квтч")):
+        return normalize(text)[:120]
+    return None
+
+
+def parse_color(text: str, expected: bool = False):
+    if not expected:
+        return None
+    clean = normalize(text)
+    if clean and not is_question(clean) and len(clean) <= 50:
+        return clean
+    return None
+
+
+def extract_deterministic(memory: dict, text: str):
+    result = normalize_memory(memory)
+    before = dict(result)
+    clean = normalize(text)
+
+    result["language"] = detect_language(
+        clean,
+        fallback=result.get("language") or "uk",
+    )
+
+    expected = result.get("last_question_topic")
+
+    brand = detect_brand(clean)
+    if brand:
+        result["brand"] = brand
+
+    model = None
+    if expected == "model" and not is_question(clean):
+        model = _clean_model_candidate(clean, result.get("brand"))
+    elif brand and not is_question(clean):
+        model = _clean_model_candidate(clean, brand)
+    elif result.get("brand") and not result.get("model") and not is_question(clean):
+        model = _clean_model_candidate(clean, result.get("brand"))
+
+    if model:
+        result["model"] = model
+
+    year = parse_year(clean)
+    if year:
+        result["year"] = year
+    elif expected == "year" and clean.lower() in NO_PREFERENCE:
+        result["year"] = "без конкретного року"
+
+    mileage = parse_mileage(clean, expected=(expected == "mileage"))
+    if mileage:
+        result["mileage"] = mileage
+
+    trim = parse_trim(clean, expected=(expected == "trim"))
+    if trim:
+        result["trim"] = trim
+
+    budget = parse_budget(clean)
+    if budget:
+        result["budget"] = budget
+
+    drive = parse_drive(clean)
+    if drive:
+        result["drive"] = drive
+
+    engine = parse_engine(clean)
+    if engine and not is_question(clean):
+        result["engine"] = engine
+
+    battery = parse_battery(clean)
+    if battery and not is_question(clean):
+        result["battery"] = battery
+
+    color = parse_color(clean, expected=(expected == "color"))
+    if color:
+        result["color"] = color
+
+    if clean:
+        facts = list(result.get("client_facts") or [])
+        if clean not in facts:
+            facts.append(clean)
+        result["client_facts"] = facts[-12:]
+
+    changed = {
+        key
+        for key in result
+        if result.get(key) != before.get(key)
+    }
+
+    return result, changed
+
+
+def merge_ai_slots(memory: dict, slots: dict):
+    result = normalize_memory(memory)
+    changed = set()
+
+    allowed = (
+        "brand", "model", "year", "mileage", "trim", "budget",
+        "engine", "drive", "battery", "color",
+    )
+
+    for key in allowed:
+        value = slots.get(key)
+        if value is None:
+            continue
+
+        value = normalize(value)
+        if not value:
+            continue
+
+        # AI extraction is a fallback. Do not overwrite an already confirmed
+        # required slot unless it was still missing.
+        if key in REQUIRED_FIELDS and result.get(key):
+            continue
+
+        if result.get(key) != value:
+            result[key] = value
+            changed.add(key)
+
+    return result, changed
+
+
+def should_try_ai_extractor(memory: dict, text: str, changed: set) -> bool:
+    clean = normalize(text)
+    if not clean:
+        return False
+
+    result = normalize_memory(memory)
+
+    # Direct question about a new/unknown car, e.g. "Что скажешь про Cupra Formentor?"
+    # Use semantic extraction so we are not limited by a hardcoded brand list.
+    if is_question(clean):
+        return (
+            not result.get("brand")
+            or not result.get("model")
+            or bool(detect_brand(clean))
+        )
+    expected = result.get("last_question_topic")
+
+    if expected in REQUIRED_FIELDS and expected not in changed and not result.get(expected):
+        return True
+
+    if not result.get("brand") or not result.get("model"):
+        return True
+
+    trim_hints = (
+        "performance", "limited", "premium", "platinum", "lariat",
+        "gt-line", "sport", "touring", "luxury", "prestige", "ultimate",
+    )
+    return any(hint in clean.lower() for hint in trim_hints)
+
+
+def missing_required(memory: dict):
+    data = normalize_memory(memory)
+    return [field for field in REQUIRED_FIELDS if not data.get(field)]
+
+
+def qualification_ready(memory: dict) -> bool:
+    return not missing_required(memory)
+
+
+def vehicle_label(memory: dict) -> str:
+    data = normalize_memory(memory)
+    parts = [data.get("brand"), data.get("model"), data.get("year")]
+    return " ".join(str(x) for x in parts if x).strip()
+
+
+def next_question(memory: dict):
+    data = normalize_memory(memory)
+    lang = data.get("language") or "uk"
+
+    if not data.get("brand"):
+        return (
+            "brand",
+            "Яка марка авто Вас цікавить?"
+            if lang == "uk"
+            else "Какая марка автомобиля Вас интересует?",
+        )
+
+    if not data.get("model"):
+        return (
+            "model",
+            f"Яка саме модель {data['brand']} Вас цікавить?"
+            if lang == "uk"
+            else f"Какая именно модель {data['brand']} Вас интересует?",
+        )
+
+    if not data.get("year"):
+        return (
+            "year",
+            f"Добре, {data['brand']} {data['model']}. Який рік або діапазон років розглядаєте?"
+            if lang == "uk"
+            else f"Хорошо, {data['brand']} {data['model']}. Какой год или диапазон лет рассматриваете?",
+        )
+
+    if not data.get("mileage"):
+        return (
+            "mileage",
+            f"Добре, орієнтуємося на {vehicle_label(data)}. По пробігу є побажання?"
+            if lang == "uk"
+            else f"Хорошо, ориентируемся на {vehicle_label(data)}. По пробегу есть пожелания?",
+        )
+
+    if not data.get("trim"):
+        return (
+            "trim",
+            f"Добре, {vehicle_label(data)}, пробіг {data['mileage']}. По комплектації є побажання?"
+            if lang == "uk"
+            else f"Хорошо, {vehicle_label(data)}, пробег {data['mileage']}. По комплектации есть пожелания?",
+        )
+
+    return (None, None)
+
+
+def selection_offer(memory: dict) -> str:
+    lang = normalize_memory(memory).get("language") or "uk"
+
+    if lang == "ru":
+        return (
+            "Если хотите, можем подобрать несколько актуальных вариантов "
+            "под эти параметры и показать, что сейчас есть на торгах. Интересно?"
+        )
+
+    return (
+        "Якщо хочете, можемо підібрати кілька актуальних варіантів "
+        "під ці параметри й показати, що зараз є на торгах. Цікаво?"
+    )
+
+
+def phone_request(memory: dict) -> str:
+    lang = normalize_memory(memory).get("language") or "uk"
+
+    if lang == "ru":
+        return (
+            "Хорошо 👍 Оставьте номер телефона или нажмите «📱 Поділитися номером» — "
+            "передам запрос менеджеру на подбор актуальных вариантов."
+        )
+
+    return (
+        "Добре 👍 Залиште номер телефону або натисніть «📱 Поділитися номером» — "
+        "передам запит менеджеру на підбір актуальних варіантів."
+    )
+
+
+def no_phone_request(text: str) -> bool:
+    low = normalize(text).lower()
+    return any(
+        phrase in low
+        for phrase in (
+            "не проси номер", "не просіть номер", "не просите номер",
+            "номер не дам", "не дам номер", "не хочу давати номер",
+            "не хочу давать номер",
+        )
+    )
+
+
+def explicit_selection_intent(text: str) -> bool:
+    low = normalize(text).lower()
+
+    if low in {
+        "пригін під ключ",
+        "пригон під ключ",
+        "пригон под ключ",
+        "хочу пригін під ключ",
+        "хочу пригон под ключ",
+        "хочу пригон під ключ",
+    }:
+        return True
+
+    phrases = (
+        "подбери варианты", "подберите варианты", "покажи варианты",
+        "покажите варианты", "хочу варианты", "хочу подобрать",
+        "хочу підбір", "підбери варіанти", "підберіть варіанти",
+        "покажи варіанти", "покажіть варіанти", "актуальные лоты",
+        "актуальні лоти", "актуальные варианты", "актуальні варіанти",
+        "хочу заказать", "хочу замовити", "замовити авто", "заказать авто",
+        "готов покупать", "готов купувати", "свяжите с менеджером",
+        "зв'яжіть з менеджером", "вызов менеджера", "виклик менеджера",
+    )
+    return any(phrase in low for phrase in phrases)
