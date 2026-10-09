@@ -1,0 +1,5302 @@
+import json
+
+PRICE_DATA = json.loads(r'''{
+  "source": "Прайс АА Клайпеда розница.xlsx",
+  "notes": {
+    "do_not_guess": "manual_check/uncertain values must never be presented as fixed prices without manager verification"
+  },
+  "usa": {
+    "Copart": {
+      "ports": [
+        "Chicago",
+        "NY",
+        "Miami",
+        "Savannah",
+        "Norfolk",
+        "Houston",
+        "L.Angeles",
+        "Seattle",
+        "Toronto",
+        "Ноnululu",
+        "JEBEL ALI (Emirates)"
+      ],
+      "vehicle_rates": {
+        "Small vehicle/Coupe/Sedan": {
+          "Chicago": 1350,
+          "NY": 1150,
+          "Miami": 1250,
+          "Savannah": 1225,
+          "Norfolk": 1225,
+          "Houston": 1350,
+          "L.Angeles": 1750,
+          "Seattle": 2350,
+          "Toronto": 1550,
+          "Ноnululu": 2950,
+          "JEBEL ALI (Emirates)": 1450
+        },
+        "Crossover/SUV/Standard Truck": {
+          "Chicago": 1600,
+          "NY": 1400,
+          "Miami": 1500,
+          "Savannah": 1525,
+          "Norfolk": 1525,
+          "Houston": 1650,
+          "L.Angeles": 1950,
+          "Seattle": 2825,
+          "Toronto": 1850,
+          "Ноnululu": 3450,
+          "JEBEL ALI (Emirates)": 1650
+        },
+        "Extra Large Vehicle/Dually/Over 20 ft.": {
+          "Chicago": 1800,
+          "NY": 1650,
+          "Miami": 1700,
+          "Savannah": 1725,
+          "Norfolk": 1725,
+          "Houston": 1850,
+          "L.Angeles": 2200,
+          "Seattle": 3225,
+          "Toronto": 2050,
+          "Ноnululu": 3950,
+          "JEBEL ALI (Emirates)": 1850
+        },
+        "Motorcycle": {
+          "Chicago": 825,
+          "NY": 775,
+          "Miami": 800,
+          "Savannah": 775,
+          "Norfolk": 775,
+          "Houston": 800,
+          "L.Angeles": 975,
+          "Seattle": 1200,
+          "Toronto": 800,
+          "Ноnululu": 1650
+        },
+        "Large Motorcycle": {
+          "Chicago": 1000,
+          "NY": 950,
+          "Miami": 1000,
+          "Savannah": 950,
+          "Norfolk": 950,
+          "Houston": 975,
+          "L.Angeles": 1175,
+          "Seattle": 1400,
+          "Toronto": 1000,
+          "Ноnululu": 2050
+        },
+        "Electrical/Hybrid FEE": {
+          "Chicago": 150,
+          "NY": 150,
+          "Miami": 150,
+          "Savannah": 150,
+          "Norfolk": 150,
+          "Houston": 150,
+          "L.Angeles": 150,
+          "Seattle": 250,
+          "Toronto": 150,
+          "Ноnululu": 150,
+          "JEBEL ALI (Emirates)": 150
+        },
+        "СТОЯНКА": {
+          "Chicago": 100,
+          "NY": 100,
+          "Miami": 100,
+          "Savannah": 100,
+          "Norfolk": 100,
+          "Houston": 100,
+          "L.Angeles": 100,
+          "Seattle": 100,
+          "Toronto": 100,
+          "Ноnululu": 100,
+          "JEBEL ALI (Emirates)": 0
+        }
+      },
+      "locations": [
+        {
+          "excel_row": 9,
+          "auction": "Copart",
+          "location": "ABILENE - Texas",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 500
+            }
+          ],
+          "moto_atv": 450
+        },
+        {
+          "excel_row": 10,
+          "auction": "Copart",
+          "location": "ALBANY - New York",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 425
+            }
+          ],
+          "moto_atv": 375
+        },
+        {
+          "excel_row": 11,
+          "auction": "Copart",
+          "location": "ALBUQUERQUE - New Mexico",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 750
+            }
+          ],
+          "moto_atv": 550
+        },
+        {
+          "excel_row": 12,
+          "auction": "Copart",
+          "location": "ALTOONA - Pennsylvania",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 600
+            }
+          ],
+          "moto_atv": 500
+        },
+        {
+          "excel_row": 13,
+          "auction": "Copart",
+          "location": "AMARILLO - Texas",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 675
+            }
+          ],
+          "moto_atv": 525
+        },
+        {
+          "excel_row": 14,
+          "auction": "Copart",
+          "location": "ANDREWS - Texas",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 575
+            }
+          ],
+          "moto_atv": 500
+        },
+        {
+          "excel_row": 15,
+          "auction": "Copart",
+          "location": "ANTELOPE - California",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 550
+            }
+          ],
+          "moto_atv": 400
+        },
+        {
+          "excel_row": 16,
+          "auction": "Copart",
+          "location": "APPLETON - Wisconsin",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 475
+            }
+          ],
+          "moto_atv": 400
+        },
+        {
+          "excel_row": 17,
+          "auction": "Copart",
+          "location": "ATLANTA EAST - Georgia",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 450
+            }
+          ],
+          "moto_atv": 375
+        },
+        {
+          "excel_row": 18,
+          "auction": "Copart",
+          "location": "ATLANTA NORTH - Georgia",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 425
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 19,
+          "auction": "Copart",
+          "location": "ATLANTA SOUTH - Georgia",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 450
+            }
+          ],
+          "moto_atv": 325
+        },
+        {
+          "excel_row": 20,
+          "auction": "Copart",
+          "location": "ATLANTA WEST - Georgia",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 475
+            }
+          ],
+          "moto_atv": 325
+        },
+        {
+          "excel_row": 21,
+          "auction": "Copart",
+          "location": "AUSTIN - Texas",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 375
+            }
+          ],
+          "moto_atv": 315
+        },
+        {
+          "excel_row": 22,
+          "auction": "Copart",
+          "location": "ADELANTO - California",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 450
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 23,
+          "auction": "Copart",
+          "location": "BAKERSFIELD - California",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 500
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 24,
+          "auction": "Copart",
+          "location": "BALTIMORE - Maryland",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 475
+            }
+          ],
+          "moto_atv": 375
+        },
+        {
+          "excel_row": 25,
+          "auction": "Copart",
+          "location": "BATON ROUGE - Louisiana",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 575
+            }
+          ],
+          "moto_atv": 400
+        },
+        {
+          "excel_row": 26,
+          "auction": "Copart",
+          "location": "BILLINGS - Montana",
+          "routes": [
+            {
+              "port": "Seattle",
+              "price": 990
+            }
+          ],
+          "moto_atv": 750
+        },
+        {
+          "excel_row": 27,
+          "auction": "Copart",
+          "location": "BIRMINGHAM - Alabama",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 525
+            }
+          ],
+          "moto_atv": 450
+        },
+        {
+          "excel_row": 28,
+          "auction": "Copart",
+          "location": "BOISE - Idaho",
+          "routes": [
+            {
+              "port": "Seattle",
+              "price": 600
+            }
+          ],
+          "moto_atv": 600
+        },
+        {
+          "excel_row": 29,
+          "auction": "Copart",
+          "location": "Buffalo - New York",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 650
+            }
+          ],
+          "moto_atv": 550
+        },
+        {
+          "excel_row": 30,
+          "auction": "Copart",
+          "location": "CANDIA - New Hampshire",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 575
+            }
+          ],
+          "moto_atv": 450
+        },
+        {
+          "excel_row": 31,
+          "auction": "Copart",
+          "location": "CARTERSVILLE - Georgia",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 450
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 32,
+          "auction": "Copart",
+          "location": "CASPER - Wyoming",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": {
+                "status": "raw_text",
+                "raw": "1025лето\\зима уточняем"
+              }
+            }
+          ],
+          "moto_atv": {
+            "status": "manual_check",
+            "raw": "Call for price"
+          }
+        },
+        {
+          "excel_row": 33,
+          "auction": "Copart",
+          "location": "CHAMBERSBURG - Pennsylvania",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 425
+            }
+          ],
+          "moto_atv": 450
+        },
+        {
+          "excel_row": 34,
+          "auction": "Copart",
+          "location": "CHARLESTON - West Virginia",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 775
+            }
+          ],
+          "moto_atv": 600
+        },
+        {
+          "excel_row": 35,
+          "auction": "Copart",
+          "location": "CHICAGO NORTH - Illinois",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 330
+            }
+          ],
+          "moto_atv": 250
+        },
+        {
+          "excel_row": 36,
+          "auction": "Copart",
+          "location": "CHICAGO SOUTH - Illinois",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 330
+            }
+          ],
+          "moto_atv": 250
+        },
+        {
+          "excel_row": 37,
+          "auction": "Copart",
+          "location": "CHINA GROVE - North Carolina",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 450
+            }
+          ],
+          "moto_atv": 375
+        },
+        {
+          "excel_row": 38,
+          "auction": "Copart",
+          "location": "CLEVELAND EAST - Ohio",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 700
+            }
+          ],
+          "moto_atv": 425
+        },
+        {
+          "excel_row": 39,
+          "auction": "Copart",
+          "location": "CLEVELAND WEST - Ohio",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 700
+            }
+          ],
+          "moto_atv": 425
+        },
+        {
+          "excel_row": 40,
+          "auction": "Copart",
+          "location": "CLEWISTON  - Florida - Copart",
+          "routes": [
+            {
+              "port": "Miami",
+              "price": 425
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 41,
+          "auction": "Copart",
+          "location": "COLORADO SPRINGS - Colorado",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 800
+            }
+          ],
+          "moto_atv": 650
+        },
+        {
+          "excel_row": 42,
+          "auction": "Copart",
+          "location": "COLUMBUS - Ohio",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 700
+            }
+          ],
+          "moto_atv": 425
+        },
+        {
+          "excel_row": 43,
+          "auction": "Copart",
+          "location": "CONCORD - North Carolina",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 450
+            }
+          ],
+          "moto_atv": 400
+        },
+        {
+          "excel_row": 44,
+          "auction": "Copart",
+          "location": "CORPUS CHRISTI - Texas",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 425
+            }
+          ],
+          "moto_atv": 375
+        },
+        {
+          "excel_row": 45,
+          "auction": "Copart",
+          "location": "CRASHEDTOYS DALLAS - Texas",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 425
+            }
+          ],
+          "moto_atv": 335
+        },
+        {
+          "excel_row": 46,
+          "auction": "Copart",
+          "location": "CRASHEDTOYS EAST BETHEL - Minnesota",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 500
+            }
+          ],
+          "moto_atv": 450
+        },
+        {
+          "excel_row": 47,
+          "auction": "Copart",
+          "location": "CRASHEDTOYS ELDRIDGE - Iowa",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 500
+            }
+          ],
+          "moto_atv": 400
+        },
+        {
+          "excel_row": 48,
+          "auction": "Copart",
+          "location": "CRASHEDTOYS MINNEAPOLIS - Minnesota",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 600
+            }
+          ],
+          "moto_atv": 450
+        },
+        {
+          "excel_row": 49,
+          "auction": "Copart",
+          "location": "CUSSETA - Alabama",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 550
+            }
+          ],
+          "moto_atv": null
+        },
+        {
+          "excel_row": 50,
+          "auction": "Copart",
+          "location": "DALLAS - Texas",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 425
+            }
+          ],
+          "moto_atv": 335
+        },
+        {
+          "excel_row": 51,
+          "auction": "Copart",
+          "location": "DALLAS SOUTH - Texas",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 425
+            }
+          ],
+          "moto_atv": 335
+        },
+        {
+          "excel_row": 52,
+          "auction": "Copart",
+          "location": "DANVILLE - Virginia",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 450
+            }
+          ],
+          "moto_atv": 375
+        },
+        {
+          "excel_row": 53,
+          "auction": "Copart",
+          "location": "DAVENPORT - Iowa",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 475
+            }
+          ],
+          "moto_atv": 400
+        },
+        {
+          "excel_row": 54,
+          "auction": "Copart",
+          "location": "DAYTON - Ohio",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 700
+            }
+          ],
+          "moto_atv": 425
+        },
+        {
+          "excel_row": 55,
+          "auction": "Copart",
+          "location": "DENVER - Colorado",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 800
+            }
+          ],
+          "moto_atv": 600
+        },
+        {
+          "excel_row": 56,
+          "auction": "Copart",
+          "location": "DENVER CENTRAL - Colorado",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 800
+            }
+          ],
+          "moto_atv": 600
+        },
+        {
+          "excel_row": 57,
+          "auction": "Copart",
+          "location": "DENVER SOUTH - Colorado",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 800
+            }
+          ],
+          "moto_atv": 650
+        },
+        {
+          "excel_row": 58,
+          "auction": "Copart",
+          "location": "DES MOINES - Iowa",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 550
+            }
+          ],
+          "moto_atv": 375
+        },
+        {
+          "excel_row": 59,
+          "auction": "Copart",
+          "location": "DETROIT - Michigan",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 550
+            }
+          ],
+          "moto_atv": 425
+        },
+        {
+          "excel_row": 60,
+          "auction": "Copart",
+          "location": "DOTHAN - Alabama",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 525
+            }
+          ],
+          "moto_atv": 525
+        },
+        {
+          "excel_row": 61,
+          "auction": "Copart",
+          "location": "DK TOWING KAUAI - Hawaii",
+          "routes": [
+            {
+              "port": "Ноnululu",
+              "price": 1900
+            }
+          ],
+          "moto_atv": {
+            "status": "manual_check",
+            "raw": "Call for price"
+          }
+        },
+        {
+          "excel_row": 62,
+          "auction": "Copart",
+          "location": "DK TOWING KAUAI - Hawaii",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 2900
+            }
+          ],
+          "moto_atv": {
+            "status": "manual_check",
+            "raw": "Call for price"
+          }
+        },
+        {
+          "excel_row": 63,
+          "auction": "Copart",
+          "location": "DYER - Indiana",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 330
+            }
+          ],
+          "moto_atv": 330
+        },
+        {
+          "excel_row": 64,
+          "auction": "Copart",
+          "location": "Earlington - KY",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 700
+            }
+          ],
+          "moto_atv": 650
+        },
+        {
+          "excel_row": 65,
+          "auction": "Copart",
+          "location": "EL PASO - Texas",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 575
+            }
+          ],
+          "moto_atv": 525
+        },
+        {
+          "excel_row": 66,
+          "auction": "Copart",
+          "location": "EUGENE - Oregon",
+          "routes": [
+            {
+              "port": "Seattle",
+              "price": 525
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 67,
+          "auction": "Copart",
+          "location": "EXETER - Rhode Island",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 500
+            }
+          ],
+          "moto_atv": 425
+        },
+        {
+          "excel_row": 68,
+          "auction": "Copart",
+          "location": "FAIRBURN - Georgia",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 425
+            }
+          ],
+          "moto_atv": 400
+        },
+        {
+          "excel_row": 69,
+          "auction": "Copart",
+          "location": "FAYETTEVILLE - Arkansas",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 625
+            }
+          ],
+          "moto_atv": 525
+        },
+        {
+          "excel_row": 70,
+          "auction": "Copart",
+          "location": "FLINT - Michigan",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 600
+            }
+          ],
+          "moto_atv": 425
+        },
+        {
+          "excel_row": 71,
+          "auction": "Copart",
+          "location": "FORT WAYNE - Indiana",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 450
+            }
+          ],
+          "moto_atv": 400
+        },
+        {
+          "excel_row": 72,
+          "auction": "Copart",
+          "location": "FREDERICKSBURG - Virginia",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 450
+            }
+          ],
+          "moto_atv": 400
+        },
+        {
+          "excel_row": 73,
+          "auction": "Copart",
+          "location": "FREETOWN - Massachusetts",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 525
+            }
+          ],
+          "moto_atv": 400
+        },
+        {
+          "excel_row": 74,
+          "auction": "Copart",
+          "location": "FRESNO - California",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 525
+            }
+          ],
+          "moto_atv": 450
+        },
+        {
+          "excel_row": 75,
+          "auction": "Copart",
+          "location": "FT. PIERCE - Florida",
+          "routes": [
+            {
+              "port": "Miami",
+              "price": 350
+            }
+          ],
+          "moto_atv": 330
+        },
+        {
+          "excel_row": 76,
+          "auction": "Copart",
+          "location": "FT. WORTH - Texas",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 425
+            }
+          ],
+          "moto_atv": 335
+        },
+        {
+          "excel_row": 77,
+          "auction": "Copart",
+          "location": "Gastonia",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 475
+            }
+          ],
+          "moto_atv": 100
+        },
+        {
+          "excel_row": 78,
+          "auction": "Copart",
+          "location": "GLASSBORO EAST - New Jersey",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 350
+            }
+          ],
+          "moto_atv": 300
+        },
+        {
+          "excel_row": 79,
+          "auction": "Copart",
+          "location": "GRAHAM - Washington",
+          "routes": [
+            {
+              "port": "Seattle",
+              "price": 300
+            }
+          ],
+          "moto_atv": 275
+        },
+        {
+          "excel_row": 80,
+          "auction": "Copart",
+          "location": "GREER - South Carolina",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 425
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 81,
+          "auction": "Copart",
+          "location": "Grenada - Mississippi",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 625
+            }
+          ],
+          "moto_atv": 550
+        },
+        {
+          "excel_row": 82,
+          "auction": "Copart",
+          "location": "HALIFAX - Nova Scotia",
+          "routes": [
+            {
+              "port": "Toronto",
+              "price": 1350
+            }
+          ],
+          "moto_atv": 1350
+        },
+        {
+          "excel_row": 83,
+          "auction": "Copart",
+          "location": "HAMMOND - Indiana",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 330
+            }
+          ],
+          "moto_atv": 250
+        },
+        {
+          "excel_row": 84,
+          "auction": "Copart",
+          "location": "HAMPTON - Virginia",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 350
+            }
+          ],
+          "moto_atv": {
+            "status": "manual_check",
+            "raw": "Call for price"
+          }
+        },
+        {
+          "excel_row": 85,
+          "auction": "Copart",
+          "location": "HARRISBURG - Pennsylvania",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 675
+            }
+          ],
+          "moto_atv": 375
+        },
+        {
+          "excel_row": 86,
+          "auction": "Copart",
+          "location": "HARTFORD - Connecticut",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 400
+            }
+          ],
+          "moto_atv": 325
+        },
+        {
+          "excel_row": 87,
+          "auction": "Copart",
+          "location": "HARTFORD SPRINGFIELD - Connecticut",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 425
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 88,
+          "auction": "Copart",
+          "location": "HAYWARD - California",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 550
+            }
+          ],
+          "moto_atv": 400
+        },
+        {
+          "excel_row": 89,
+          "auction": "Copart",
+          "location": "HELENA - Montana",
+          "routes": [
+            {
+              "port": "Seattle",
+              "price": 900
+            }
+          ],
+          "moto_atv": 700
+        },
+        {
+          "excel_row": 90,
+          "auction": "Copart",
+          "location": "HONOLULU - Hawaii",
+          "routes": [
+            {
+              "port": "Ноnululu",
+              "price": 275
+            }
+          ],
+          "moto_atv": {
+            "status": "manual_check",
+            "raw": "Call for price"
+          }
+        },
+        {
+          "excel_row": 91,
+          "auction": "Copart",
+          "location": "HOUSTON - Texas",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 330
+            }
+          ],
+          "moto_atv": 250
+        },
+        {
+          "excel_row": 92,
+          "auction": "Copart",
+          "location": "INDIANAPOLIS - Indiana",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 450
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 93,
+          "auction": "Copart",
+          "location": "IONIA - Michigan",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 550
+            }
+          ],
+          "moto_atv": 400
+        },
+        {
+          "excel_row": 94,
+          "auction": "Copart",
+          "location": "JACKSON - Mississippi",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 575
+            }
+          ],
+          "moto_atv": 475
+        },
+        {
+          "excel_row": 95,
+          "auction": "Copart",
+          "location": "JACKSONVILLE EAST - Florida",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 375
+            }
+          ],
+          "moto_atv": 300
+        },
+        {
+          "excel_row": 96,
+          "auction": "Copart",
+          "location": "JACKSONVILLE WEST - Florida",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 375
+            }
+          ],
+          "moto_atv": 325
+        },
+        {
+          "excel_row": 97,
+          "auction": "Copart",
+          "location": "KANSAS CITY - Kansas",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 775
+            }
+          ],
+          "moto_atv": 425
+        },
+        {
+          "excel_row": 98,
+          "auction": "Copart",
+          "location": "KINCHELOE - Michigan",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 875
+            }
+          ],
+          "moto_atv": 825
+        },
+        {
+          "excel_row": 99,
+          "auction": "Copart",
+          "location": "KNOXVILLE - Tennessee",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 550
+            }
+          ],
+          "moto_atv": 450
+        },
+        {
+          "excel_row": 100,
+          "auction": "Copart",
+          "location": "LAGRANGE - North Carolina",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 475
+            }
+          ],
+          "moto_atv": null
+        },
+        {
+          "excel_row": 101,
+          "auction": "Copart",
+          "location": "LANSING - Michigan",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 550
+            }
+          ],
+          "moto_atv": 400
+        },
+        {
+          "excel_row": 102,
+          "auction": "Copart",
+          "location": "LAS VEGAS - Nevada",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 475
+            }
+          ],
+          "moto_atv": 400
+        },
+        {
+          "excel_row": 103,
+          "auction": "Copart",
+          "location": "LEXINGTON EAST - Kentucky",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 700
+            }
+          ],
+          "moto_atv": 425
+        },
+        {
+          "excel_row": 104,
+          "auction": "Copart",
+          "location": "LEXINGTON WEST - Kentucky",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 700
+            }
+          ],
+          "moto_atv": 425
+        },
+        {
+          "excel_row": 105,
+          "auction": "Copart",
+          "location": "LINCOLN - Nebraska",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 600
+            }
+          ],
+          "moto_atv": 450
+        },
+        {
+          "excel_row": 106,
+          "auction": "Copart",
+          "location": "LITTLE ROCK - Arkansas",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 600
+            }
+          ],
+          "moto_atv": 500
+        },
+        {
+          "excel_row": 107,
+          "auction": "Copart",
+          "location": "LONDON - Ontario",
+          "routes": [
+            {
+              "port": "Toronto",
+              "price": 400
+            }
+          ],
+          "moto_atv": 400
+        },
+        {
+          "excel_row": 108,
+          "auction": "Copart",
+          "location": "LONG BEACH - California",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 300
+            }
+          ],
+          "moto_atv": 250
+        },
+        {
+          "excel_row": 109,
+          "auction": "Copart",
+          "location": "LONG ISLAND - New York",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 400
+            }
+          ],
+          "moto_atv": 325
+        },
+        {
+          "excel_row": 110,
+          "auction": "Copart",
+          "location": "LONGVIEW - Texas",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 425
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 111,
+          "auction": "Copart",
+          "location": "LOS ANGELES - California",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 310
+            }
+          ],
+          "moto_atv": 275
+        },
+        {
+          "excel_row": 112,
+          "auction": "Copart",
+          "location": "LOUISVILLE - Kentucky",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 700
+            }
+          ],
+          "moto_atv": 425
+        },
+        {
+          "excel_row": 113,
+          "auction": "Copart",
+          "location": "LUFKIN - Texas",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 425
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 114,
+          "auction": "Copart",
+          "location": "LUMBERTON - North Carolina",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 450
+            }
+          ],
+          "moto_atv": 375
+        },
+        {
+          "excel_row": 115,
+          "auction": "Copart",
+          "location": "LYMAN - Maine",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 650
+            }
+          ],
+          "moto_atv": 500
+        },
+        {
+          "excel_row": 116,
+          "auction": "Copart",
+          "location": "MACON - Georgia",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 400
+            }
+          ],
+          "moto_atv": 325
+        },
+        {
+          "excel_row": 117,
+          "auction": "Copart",
+          "location": "MADISON - Wisconsin",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 450
+            }
+          ],
+          "moto_atv": 400
+        },
+        {
+          "excel_row": 118,
+          "auction": "Copart",
+          "location": "MARTINEZ - California",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 550
+            }
+          ],
+          "moto_atv": 400
+        },
+        {
+          "excel_row": 119,
+          "auction": "Copart",
+          "location": "MCALLEN - Texas",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 500
+            }
+          ],
+          "moto_atv": 435
+        },
+        {
+          "excel_row": 120,
+          "auction": "Copart",
+          "location": "MEBANE - North Carolina",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 450
+            }
+          ],
+          "moto_atv": 375
+        },
+        {
+          "excel_row": 121,
+          "auction": "Copart",
+          "location": "MEMPHIS - Tennessee",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 650
+            }
+          ],
+          "moto_atv": 475
+        },
+        {
+          "excel_row": 122,
+          "auction": "Copart",
+          "location": "MENTONE - California",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 450
+            }
+          ],
+          "moto_atv": 450
+        },
+        {
+          "excel_row": 123,
+          "auction": "Copart",
+          "location": "MIAMI CENTRAL - Florida",
+          "routes": [
+            {
+              "port": "Miami",
+              "price": 250
+            }
+          ],
+          "moto_atv": 250
+        },
+        {
+          "excel_row": 124,
+          "auction": "Copart",
+          "location": "MIAMI NORTH - Florida",
+          "routes": [
+            {
+              "port": "Miami",
+              "price": 300
+            }
+          ],
+          "moto_atv": 300
+        },
+        {
+          "excel_row": 125,
+          "auction": "Copart",
+          "location": "MIAMI SOUTH - Florida",
+          "routes": [
+            {
+              "port": "Miami",
+              "price": 300
+            }
+          ],
+          "moto_atv": 275
+        },
+        {
+          "excel_row": 126,
+          "auction": "Copart",
+          "location": "MILWAUKEE - Wisconsin",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 375
+            }
+          ],
+          "moto_atv": 325
+        },
+        {
+          "excel_row": 127,
+          "auction": "Copart",
+          "location": "MINNEAPOLIS - Minnesota",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 500
+            }
+          ],
+          "moto_atv": 450
+        },
+        {
+          "excel_row": 128,
+          "auction": "Copart",
+          "location": "MINNEAPOLIS NORTH - Minnesota",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 550
+            }
+          ],
+          "moto_atv": 450
+        },
+        {
+          "excel_row": 129,
+          "auction": "Copart",
+          "location": "MO - COLUMBIA - Missouri",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 775
+            }
+          ],
+          "moto_atv": 450
+        },
+        {
+          "excel_row": 130,
+          "auction": "Copart",
+          "location": "MOBILE - Alabama",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 550
+            }
+          ],
+          "moto_atv": 425
+        },
+        {
+          "excel_row": 131,
+          "auction": "Copart",
+          "location": "MOCKSVILLE - North Carolina",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 450
+            }
+          ],
+          "moto_atv": 375
+        },
+        {
+          "excel_row": 132,
+          "auction": "Copart",
+          "location": "MONTGOMERY - Alabama",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 550
+            }
+          ],
+          "moto_atv": 425
+        },
+        {
+          "excel_row": 133,
+          "auction": "Copart",
+          "location": "MONCTON - New Brunswick",
+          "routes": [
+            {
+              "port": "Toronto",
+              "price": 1450
+            }
+          ],
+          "moto_atv": 1450
+        },
+        {
+          "excel_row": 134,
+          "auction": "Copart",
+          "location": "MONTREAL - Quebec",
+          "routes": [
+            {
+              "port": "Toronto",
+              "price": 650
+            }
+          ],
+          "moto_atv": 650
+        },
+        {
+          "excel_row": 135,
+          "auction": "Copart",
+          "location": "N.Boston-ROWLEY Sublot - Massachusetts",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 600
+            }
+          ],
+          "moto_atv": {
+            "status": "manual_check",
+            "raw": "Call for price"
+          }
+        },
+        {
+          "excel_row": 136,
+          "auction": "Copart",
+          "location": "NAPA - California",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 625
+            }
+          ],
+          "moto_atv": null
+        },
+        {
+          "excel_row": 137,
+          "auction": "Copart",
+          "location": "NASHVILLE - Tennessee",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 550
+            }
+          ],
+          "moto_atv": {
+            "status": "manual_check",
+            "raw": "Call for price"
+          }
+        },
+        {
+          "excel_row": 138,
+          "auction": "Copart",
+          "location": "NEW ORLEANS - Louisiana",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 500
+            }
+          ],
+          "moto_atv": 450
+        },
+        {
+          "excel_row": 139,
+          "auction": "Copart",
+          "location": "NEWBURGH - New York",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 400
+            }
+          ],
+          "moto_atv": {
+            "status": "manual_check",
+            "raw": "Call for price"
+          }
+        },
+        {
+          "excel_row": 140,
+          "auction": "Copart",
+          "location": "NORTH AUSTIN - Texas - Copart",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 475
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 141,
+          "auction": "Copart",
+          "location": "NORTH BOSTON - Massachusetts",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 525
+            }
+          ],
+          "moto_atv": 425
+        },
+        {
+          "excel_row": 142,
+          "auction": "Copart",
+          "location": "NORTH CHARLESTON - South Carolina",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 425
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 143,
+          "auction": "Copart",
+          "location": "NORTH SEATTLE - Washington",
+          "routes": [
+            {
+              "port": "Seattle",
+              "price": 350
+            }
+          ],
+          "moto_atv": 300
+        },
+        {
+          "excel_row": 144,
+          "auction": "Copart",
+          "location": "OCALA - Florida",
+          "routes": [
+            {
+              "port": "Miami",
+              "price": 450
+            }
+          ],
+          "moto_atv": 400
+        },
+        {
+          "excel_row": 145,
+          "auction": "Copart",
+          "location": "OGDEN - Utah",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 700
+            }
+          ],
+          "moto_atv": 650
+        },
+        {
+          "excel_row": 146,
+          "auction": "Copart",
+          "location": "OKLAHOMA CITY - Oklahoma",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 550
+            }
+          ],
+          "moto_atv": 450
+        },
+        {
+          "excel_row": 147,
+          "auction": "Copart",
+          "location": "ORLANDO - Florida",
+          "routes": [
+            {
+              "port": "Miami",
+              "price": 400
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 148,
+          "auction": "Copart",
+          "location": "ORLANDO NORTH - Florida",
+          "routes": [
+            {
+              "port": "Miami",
+              "price": 400
+            }
+          ],
+          "moto_atv": 375
+        },
+        {
+          "excel_row": 149,
+          "auction": "Copart",
+          "location": "OTTAWA - Ontario",
+          "routes": [
+            {
+              "port": "Toronto",
+              "price": 625
+            }
+          ],
+          "moto_atv": 625
+        },
+        {
+          "excel_row": 150,
+          "auction": "Copart",
+          "location": "PASCO - Washington",
+          "routes": [
+            {
+              "port": "Seattle",
+              "price": 500
+            }
+          ],
+          "moto_atv": 400
+        },
+        {
+          "excel_row": 151,
+          "auction": "Copart",
+          "location": "PEORIA - Illinois",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 450
+            }
+          ],
+          "moto_atv": 400
+        },
+        {
+          "excel_row": 152,
+          "auction": "Copart",
+          "location": "PHILADELPHIA - Pennsylvania",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 375
+            }
+          ],
+          "moto_atv": 325
+        },
+        {
+          "excel_row": 153,
+          "auction": "Copart",
+          "location": "PHILADELPHIA EAST - Pennsylvania",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 375
+            }
+          ],
+          "moto_atv": 325
+        },
+        {
+          "excel_row": 154,
+          "auction": "Copart",
+          "location": "PHOENIX - Arizona",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 500
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 155,
+          "auction": "Copart",
+          "location": "Phoenix North - Arizona",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 600
+            }
+          ],
+          "moto_atv": 500
+        },
+        {
+          "excel_row": 156,
+          "auction": "Copart",
+          "location": "PITTSBURGH EAST - Pennsylvania",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 600
+            }
+          ],
+          "moto_atv": 500
+        },
+        {
+          "excel_row": 157,
+          "auction": "Copart",
+          "location": "PITTSBURGH NORTH - Pennsylvania",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 600
+            }
+          ],
+          "moto_atv": 500
+        },
+        {
+          "excel_row": 158,
+          "auction": "Copart",
+          "location": "PITTSBURGH SOUTH - Pennsylvania",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 600
+            }
+          ],
+          "moto_atv": 500
+        },
+        {
+          "excel_row": 159,
+          "auction": "Copart",
+          "location": "PITTSBURGH WEST - Pennsylvania",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 600
+            }
+          ],
+          "moto_atv": 500
+        },
+        {
+          "excel_row": 160,
+          "auction": "Copart",
+          "location": "PORTLAND NORTH - Oregon",
+          "routes": [
+            {
+              "port": "Seattle",
+              "price": 400
+            }
+          ],
+          "moto_atv": 325
+        },
+        {
+          "excel_row": 161,
+          "auction": "Copart",
+          "location": "PORTLAND SOUTH - Oregon",
+          "routes": [
+            {
+              "port": "Seattle",
+              "price": 450
+            }
+          ],
+          "moto_atv": 375
+        },
+        {
+          "excel_row": 162,
+          "auction": "Copart",
+          "location": "PUNTA GORDA - Florida",
+          "routes": [
+            {
+              "port": "Miami",
+              "price": 425
+            }
+          ],
+          "moto_atv": 375
+        },
+        {
+          "excel_row": 163,
+          "auction": "Copart",
+          "location": "PUNTA GORDA SOUTH - Florida",
+          "routes": [
+            {
+              "port": "Miami",
+              "price": 425
+            }
+          ],
+          "moto_atv": 375
+        },
+        {
+          "excel_row": 164,
+          "auction": "Copart",
+          "location": "RALEIGH - North Carolina",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 450
+            }
+          ],
+          "moto_atv": 375
+        },
+        {
+          "excel_row": 165,
+          "auction": "Copart",
+          "location": "RANCHO CUCAMONGA - California",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 350
+            }
+          ],
+          "moto_atv": 300
+        },
+        {
+          "excel_row": 166,
+          "auction": "Copart",
+          "location": "REDDING - California",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 950
+            }
+          ],
+          "moto_atv": 800
+        },
+        {
+          "excel_row": 167,
+          "auction": "Copart",
+          "location": "RENO - Nevada",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 700
+            }
+          ],
+          "moto_atv": 550
+        },
+        {
+          "excel_row": 168,
+          "auction": "Copart",
+          "location": "RICHMOND - Virginia",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 325
+            }
+          ],
+          "moto_atv": 325
+        },
+        {
+          "excel_row": 169,
+          "auction": "Copart",
+          "location": "RICHMOND EAST - Virginia",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 325
+            }
+          ],
+          "moto_atv": 300
+        },
+        {
+          "excel_row": 170,
+          "auction": "Copart",
+          "location": "ROCHESTER - New York",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 600
+            }
+          ],
+          "moto_atv": 450
+        },
+        {
+          "excel_row": 171,
+          "auction": "Copart",
+          "location": "RUTLAND - Vermont",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 650
+            }
+          ],
+          "moto_atv": 550
+        },
+        {
+          "excel_row": 172,
+          "auction": "Copart",
+          "location": "SACRAMENTO - California",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 625
+            }
+          ],
+          "moto_atv": 500
+        },
+        {
+          "excel_row": 173,
+          "auction": "Copart",
+          "location": "SALT LAKE CITY - Utah",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 800
+            }
+          ],
+          "moto_atv": 650
+        },
+        {
+          "excel_row": 174,
+          "auction": "Copart",
+          "location": "SAN ANTONIO - Texas",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 450
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 175,
+          "auction": "Copart",
+          "location": "SAN BERNARDINO - California",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 370
+            }
+          ],
+          "moto_atv": 330
+        },
+        {
+          "excel_row": 176,
+          "auction": "Copart",
+          "location": "SAN DIEGO - California",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 380
+            }
+          ],
+          "moto_atv": 300
+        },
+        {
+          "excel_row": 177,
+          "auction": "Copart",
+          "location": "SAN JOSE - California",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 550
+            }
+          ],
+          "moto_atv": 450
+        },
+        {
+          "excel_row": 178,
+          "auction": "Copart",
+          "location": "SAVANNAH - Georgia",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 275
+            }
+          ],
+          "moto_atv": 250
+        },
+        {
+          "excel_row": 179,
+          "auction": "Copart",
+          "location": "SAVANNAH / VERTIA SUBLOT",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 325
+            }
+          ],
+          "moto_atv": 300
+        },
+        {
+          "excel_row": 180,
+          "auction": "Copart",
+          "location": "SC - COLUMBIA - South Carolina",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 425
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 181,
+          "auction": "Copart",
+          "location": "SCRANTON - Pennsylvania",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 400
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 182,
+          "auction": "Copart",
+          "location": "SEAFORD - Delaware",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 475
+            }
+          ],
+          "moto_atv": 375
+        },
+        {
+          "excel_row": 183,
+          "auction": "Copart",
+          "location": "SHREVEPORT - Louisiana",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 465
+            }
+          ],
+          "moto_atv": 375
+        },
+        {
+          "excel_row": 184,
+          "auction": "Copart",
+          "location": "SIKESTON - Missouri",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 625
+            }
+          ],
+          "moto_atv": 475
+        },
+        {
+          "excel_row": 185,
+          "auction": "Copart",
+          "location": "SO SACRAMENTO - California",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 625
+            }
+          ],
+          "moto_atv": 400
+        },
+        {
+          "excel_row": 186,
+          "auction": "Copart",
+          "location": "SOMERVILLE - New Jersey",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 300
+            }
+          ],
+          "moto_atv": 250
+        },
+        {
+          "excel_row": 187,
+          "auction": "Copart",
+          "location": "SOUTH BOSTON - Massachusetts",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 525
+            }
+          ],
+          "moto_atv": 425
+        },
+        {
+          "excel_row": 188,
+          "auction": "Copart",
+          "location": "SPANAWAY - Washington",
+          "routes": [
+            {
+              "port": "Seattle",
+              "price": 325
+            }
+          ],
+          "moto_atv": 325
+        },
+        {
+          "excel_row": 189,
+          "auction": "Copart",
+          "location": "SPARTANBURG - South Carolina",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 475
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 190,
+          "auction": "Copart",
+          "location": "SPOKANE - Washington",
+          "routes": [
+            {
+              "port": "Seattle",
+              "price": 500
+            }
+          ],
+          "moto_atv": 400
+        },
+        {
+          "excel_row": 191,
+          "auction": "Copart",
+          "location": "SPRINGFIELD - Missouri",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 775
+            }
+          ],
+          "moto_atv": 425
+        },
+        {
+          "excel_row": 192,
+          "auction": "Copart",
+          "location": "ST. CLOUD - Minnesota",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 650
+            }
+          ],
+          "moto_atv": 500
+        },
+        {
+          "excel_row": 193,
+          "auction": "Copart",
+          "location": "ST. LOUIS - Missouri",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 725
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 194,
+          "auction": "Copart",
+          "location": "ST. JOHN'S - Newfoundland and Lab",
+          "routes": [
+            {
+              "port": "Toronto",
+              "price": 2000
+            }
+          ],
+          "moto_atv": 2000
+        },
+        {
+          "excel_row": 195,
+          "auction": "Copart",
+          "location": "SUN VALLEY - California",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 350
+            }
+          ],
+          "moto_atv": 300
+        },
+        {
+          "excel_row": 196,
+          "auction": "Copart",
+          "location": "SYRACUSE - New York",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 525
+            }
+          ],
+          "moto_atv": 425
+        },
+        {
+          "excel_row": 197,
+          "auction": "Copart",
+          "location": "Southern Illinois - Illinois",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 725
+            }
+          ],
+          "moto_atv": 400
+        },
+        {
+          "excel_row": 198,
+          "auction": "Copart",
+          "location": "TALLAHASSEE - Florida",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 475
+            }
+          ],
+          "moto_atv": 375
+        },
+        {
+          "excel_row": 199,
+          "auction": "Copart",
+          "location": "TAMPA SOUTH - Florida",
+          "routes": [
+            {
+              "port": "Miami",
+              "price": 400
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 200,
+          "auction": "Copart",
+          "location": "TANNER - Alabama",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 575
+            }
+          ],
+          "moto_atv": 425
+        },
+        {
+          "excel_row": 201,
+          "auction": "Copart",
+          "location": "TIFTON - Georgia",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 425
+            }
+          ],
+          "moto_atv": 325
+        },
+        {
+          "excel_row": 202,
+          "auction": "Copart",
+          "location": "TORONTO - Ontario",
+          "routes": [
+            {
+              "port": "Toronto",
+              "price": 350
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 203,
+          "auction": "Copart",
+          "location": "TRENTON - New Jersey",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 300
+            }
+          ],
+          "moto_atv": 250
+        },
+        {
+          "excel_row": 204,
+          "auction": "Copart",
+          "location": "TUCSON - Arizona",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 550
+            }
+          ],
+          "moto_atv": 450
+        },
+        {
+          "excel_row": 205,
+          "auction": "Copart",
+          "location": "TULSA - Oklahoma",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 625
+            }
+          ],
+          "moto_atv": 525
+        },
+        {
+          "excel_row": 206,
+          "auction": "Copart",
+          "location": "VALLEJO - California",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 550
+            }
+          ],
+          "moto_atv": 450
+        },
+        {
+          "excel_row": 207,
+          "auction": "Copart",
+          "location": "VAN NUYS - California",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 350
+            }
+          ],
+          "moto_atv": 330
+        },
+        {
+          "excel_row": 208,
+          "auction": "Copart",
+          "location": "VINTON - Louisiana",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 500
+            }
+          ],
+          "moto_atv": 400
+        },
+        {
+          "excel_row": 209,
+          "auction": "Copart",
+          "location": "WACO - Texas",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 475
+            }
+          ],
+          "moto_atv": 400
+        },
+        {
+          "excel_row": 210,
+          "auction": "Copart",
+          "location": "WALTON - Kentucky",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 700
+            }
+          ],
+          "moto_atv": 425
+        },
+        {
+          "excel_row": 211,
+          "auction": "Copart",
+          "location": "WAYLAND - Michigan",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 550
+            }
+          ],
+          "moto_atv": 450
+        },
+        {
+          "excel_row": 212,
+          "auction": "Copart",
+          "location": "WASHINGTON DC - Maryland",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 450
+            }
+          ],
+          "moto_atv": 375
+        },
+        {
+          "excel_row": 213,
+          "auction": "Copart",
+          "location": "WEBSTER - New Hampshire",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 550
+            }
+          ],
+          "moto_atv": 150
+        },
+        {
+          "excel_row": 214,
+          "auction": "Copart",
+          "location": "WEST PALM BEACH - Florida",
+          "routes": [
+            {
+              "port": "Miami",
+              "price": 320
+            }
+          ],
+          "moto_atv": 310
+        },
+        {
+          "excel_row": 215,
+          "auction": "Copart",
+          "location": "WEST WARREN - Massachusetts",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 525
+            }
+          ],
+          "moto_atv": 425
+        },
+        {
+          "excel_row": 216,
+          "auction": "Copart",
+          "location": "WHEELING - Illinois",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 330
+            }
+          ],
+          "moto_atv": 250
+        },
+        {
+          "excel_row": 217,
+          "auction": "Copart",
+          "location": "Windham - Maine",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 650
+            }
+          ],
+          "moto_atv": 525
+        },
+        {
+          "excel_row": 218,
+          "auction": "Copart",
+          "location": "WICHITA - Kansas",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 700
+            }
+          ],
+          "moto_atv": 600
+        },
+        {
+          "excel_row": 219,
+          "auction": "Copart",
+          "location": "YORK HAVEN - Pennsylvania",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 425
+            }
+          ],
+          "moto_atv": 400
+        }
+      ]
+    },
+    "IAAI": {
+      "ports": [
+        "Chicago",
+        "NY",
+        "Miami",
+        "Savannah",
+        "Norfolk",
+        "Houston",
+        "L.Angeles",
+        "Seattle",
+        "Toronto",
+        "Ноnululu",
+        "JEBEL ALI (Emirates)"
+      ],
+      "vehicle_rates": {
+        "Small vehicle/Coupe/Sedan": {
+          "Chicago": 1350,
+          "NY": 1150,
+          "Miami": 1250,
+          "Savannah": 1225,
+          "Norfolk": 1225,
+          "Houston": 1350,
+          "L.Angeles": 1750,
+          "Seattle": 2350,
+          "Toronto": 1550,
+          "Ноnululu": 2950,
+          "JEBEL ALI (Emirates)": 1450
+        },
+        "Crossover/SUV/Standard Truck": {
+          "Chicago": 1600,
+          "NY": 1400,
+          "Miami": 1500,
+          "Savannah": 1525,
+          "Norfolk": 1525,
+          "Houston": 1650,
+          "L.Angeles": 1950,
+          "Seattle": 2825,
+          "Toronto": 1850,
+          "Ноnululu": 3450,
+          "JEBEL ALI (Emirates)": 1650
+        },
+        "Extra Large Vehicle/Dually/Over 20 ft.": {
+          "Chicago": 1800,
+          "NY": 1650,
+          "Miami": 1700,
+          "Savannah": 1725,
+          "Norfolk": 1725,
+          "Houston": 1850,
+          "L.Angeles": 2200,
+          "Seattle": 3225,
+          "Toronto": 2050,
+          "Ноnululu": 3950,
+          "JEBEL ALI (Emirates)": 1850
+        },
+        "Motorcycle": {
+          "Chicago": 825,
+          "NY": 775,
+          "Miami": 800,
+          "Savannah": 775,
+          "Norfolk": 775,
+          "Houston": 800,
+          "L.Angeles": 975,
+          "Seattle": 1200,
+          "Toronto": 800,
+          "Ноnululu": 1650
+        },
+        "Large Motorcycle": {
+          "Chicago": 1000,
+          "NY": 950,
+          "Miami": 1000,
+          "Savannah": 950,
+          "Norfolk": 950,
+          "Houston": 975,
+          "L.Angeles": 1175,
+          "Seattle": 1400,
+          "Toronto": 1000,
+          "Ноnululu": 2050
+        },
+        "Electrical/Hybrid FEE": {
+          "Chicago": 150,
+          "NY": 150,
+          "Miami": 150,
+          "Savannah": 150,
+          "Norfolk": 150,
+          "Houston": 150,
+          "L.Angeles": 150,
+          "Seattle": 250,
+          "Toronto": 150,
+          "Ноnululu": 150,
+          "JEBEL ALI (Emirates)": 150
+        },
+        "СТОЯНКА": {
+          "Chicago": 100,
+          "NY": 100,
+          "Miami": 100,
+          "Savannah": 100,
+          "Norfolk": 100,
+          "Houston": 100,
+          "L.Angeles": 100,
+          "Seattle": 100,
+          "Toronto": 100,
+          "Ноnululu": 100,
+          "JEBEL ALI (Emirates)": 0
+        }
+      },
+      "locations": [
+        {
+          "excel_row": 9,
+          "auction": "IAAI",
+          "location": "ABILENE - Texas",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 500
+            }
+          ],
+          "moto_atv": 450
+        },
+        {
+          "excel_row": 10,
+          "auction": "IAAI",
+          "location": "ACE - Carson - California",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 300
+            }
+          ],
+          "moto_atv": 300
+        },
+        {
+          "excel_row": 11,
+          "auction": "IAAI",
+          "location": "ACE - Perris - California",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 400
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 12,
+          "auction": "IAAI",
+          "location": "ACE-CARSON-California",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 310
+            }
+          ],
+          "moto_atv": 300
+        },
+        {
+          "excel_row": 13,
+          "auction": "IAAI",
+          "location": "AKRON-CANTON - Ohio",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 700
+            }
+          ],
+          "moto_atv": 500
+        },
+        {
+          "excel_row": 14,
+          "auction": "IAAI",
+          "location": "ALBANY - New York",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 425
+            }
+          ],
+          "moto_atv": 375
+        },
+        {
+          "excel_row": 15,
+          "auction": "IAAI",
+          "location": "ALBUQUERQUE - New Mexico",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 750
+            }
+          ],
+          "moto_atv": 550
+        },
+        {
+          "excel_row": 16,
+          "auction": "IAAI",
+          "location": "ALTOONA - Pennsylvania",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 600
+            }
+          ],
+          "moto_atv": 500
+        },
+        {
+          "excel_row": 17,
+          "auction": "IAAI",
+          "location": "AMARILLO - Texas",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 675
+            }
+          ],
+          "moto_atv": 525
+        },
+        {
+          "excel_row": 18,
+          "auction": "IAAI",
+          "location": "ANAHEIM - California",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 350
+            }
+          ],
+          "moto_atv": 300
+        },
+        {
+          "excel_row": 19,
+          "auction": "IAAI",
+          "location": "APPLETON - Wisconsin",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 475
+            }
+          ],
+          "moto_atv": 400
+        },
+        {
+          "excel_row": 20,
+          "auction": "IAAI",
+          "location": "ASHEVILLE - North Carolina",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 550
+            }
+          ],
+          "moto_atv": 400
+        },
+        {
+          "excel_row": 21,
+          "auction": "IAAI",
+          "location": "ASHLAND - Kentucky",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": {
+                "status": "manual_check",
+                "raw": "Call for price"
+              }
+            }
+          ],
+          "moto_atv": 550
+        },
+        {
+          "excel_row": 22,
+          "auction": "IAAI",
+          "location": "ATLANTA - Georgia",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 475
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 23,
+          "auction": "IAAI",
+          "location": "ATLANTA EAST - Georgia",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 475
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 24,
+          "auction": "IAAI",
+          "location": "ATLANTA NORTH - Georgia",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 475
+            }
+          ],
+          "moto_atv": 325
+        },
+        {
+          "excel_row": 25,
+          "auction": "IAAI",
+          "location": "ATLANTA SOUTH - Georgia",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 475
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 26,
+          "auction": "IAAI",
+          "location": "AUSTIN - Texas",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 400
+            }
+          ],
+          "moto_atv": null
+        },
+        {
+          "excel_row": 27,
+          "auction": "IAAI",
+          "location": "AVENEL NEW JERSEY - New Jersey",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 300
+            }
+          ],
+          "moto_atv": 250
+        },
+        {
+          "excel_row": 28,
+          "auction": "IAAI",
+          "location": "BALTIMORE - Maryland",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 500
+            }
+          ],
+          "moto_atv": 375
+        },
+        {
+          "excel_row": 29,
+          "auction": "IAAI",
+          "location": "BATON ROUGE - Louisiana",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 625
+            },
+            {
+              "port": "Houston",
+              "price": {
+                "status": "uncertain",
+                "value": 450,
+                "raw": "450?"
+              }
+            }
+          ],
+          "moto_atv": 400
+        },
+        {
+          "excel_row": 30,
+          "auction": "IAAI",
+          "location": "BILLINGS - Montana",
+          "routes": [
+            {
+              "port": "Seattle",
+              "price": 990
+            }
+          ],
+          "moto_atv": 750
+        },
+        {
+          "excel_row": 31,
+          "auction": "IAAI",
+          "location": "BIRMINGHAM - Alabama",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 525
+            }
+          ],
+          "moto_atv": 450
+        },
+        {
+          "excel_row": 32,
+          "auction": "IAAI",
+          "location": "BOISE - Idaho",
+          "routes": [
+            {
+              "port": "Seattle",
+              "price": 600
+            }
+          ],
+          "moto_atv": 600
+        },
+        {
+          "excel_row": 33,
+          "auction": "IAAI",
+          "location": "BOSTON - SHIRLEY - Massachusetts",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 525
+            }
+          ],
+          "moto_atv": 425
+        },
+        {
+          "excel_row": 34,
+          "auction": "IAAI",
+          "location": "BOWLING GREEN - Kentucky",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": {
+                "status": "manual_check",
+                "raw": "Call for price"
+              }
+            }
+          ],
+          "moto_atv": 475
+        },
+        {
+          "excel_row": 35,
+          "auction": "IAAI",
+          "location": "BOWLING GREEN - Kentucky",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": {
+                "status": "manual_check",
+                "raw": "Call for price"
+              }
+            }
+          ],
+          "moto_atv": null
+        },
+        {
+          "excel_row": 36,
+          "auction": "IAAI",
+          "location": "BRIDGEPORT - Pennsylvania",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 375
+            }
+          ],
+          "moto_atv": 325
+        },
+        {
+          "excel_row": 37,
+          "auction": "IAAI",
+          "location": "BUCKHANNON - West Virginia",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 775
+            }
+          ],
+          "moto_atv": 600
+        },
+        {
+          "excel_row": 38,
+          "auction": "IAAI",
+          "location": "BUFFALO - New York",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 650
+            }
+          ],
+          "moto_atv": 500
+        },
+        {
+          "excel_row": 39,
+          "auction": "IAAI",
+          "location": "BURLINGTON - Vermont",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 650
+            }
+          ],
+          "moto_atv": 600
+        },
+        {
+          "excel_row": 40,
+          "auction": "IAAI",
+          "location": "CENTRAL NEW JERSEY - New Jersey",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 300
+            }
+          ],
+          "moto_atv": 250
+        },
+        {
+          "excel_row": 41,
+          "auction": "IAAI",
+          "location": "CHARLESTON - South Carolina",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 425
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 42,
+          "auction": "IAAI",
+          "location": "CHARLOTTE - North Carolina",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 475
+            }
+          ],
+          "moto_atv": 375
+        },
+        {
+          "excel_row": 43,
+          "auction": "IAAI",
+          "location": "CHATTANOOGA - Tennessee",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 625
+            }
+          ],
+          "moto_atv": 525
+        },
+        {
+          "excel_row": 44,
+          "auction": "IAAI",
+          "location": "CHICAGO-NORTH - Illinois",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 330
+            }
+          ],
+          "moto_atv": 250
+        },
+        {
+          "excel_row": 45,
+          "auction": "IAAI",
+          "location": "CHICAGO-SOUTH - Illinois",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 330
+            }
+          ],
+          "moto_atv": 250
+        },
+        {
+          "excel_row": 46,
+          "auction": "IAAI",
+          "location": "CHICAGO-WEST - Illinois",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 330
+            }
+          ],
+          "moto_atv": 250
+        },
+        {
+          "excel_row": 47,
+          "auction": "IAAI",
+          "location": "CINCINNATI - Ohio",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 700
+            }
+          ],
+          "moto_atv": 425
+        },
+        {
+          "excel_row": 48,
+          "auction": "IAAI",
+          "location": "CINCINNATI SOUTH - Ohio",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 700
+            }
+          ],
+          "moto_atv": 425
+        },
+        {
+          "excel_row": 49,
+          "auction": "IAAI",
+          "location": "CLEARWATER - Florida",
+          "routes": [
+            {
+              "port": "Miami",
+              "price": 400
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 50,
+          "auction": "IAAI",
+          "location": "CLEVELAND - Ohio",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 700
+            }
+          ],
+          "moto_atv": 425
+        },
+        {
+          "excel_row": 51,
+          "auction": "IAAI",
+          "location": "Colorado Springs - Colorado",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 800
+            }
+          ],
+          "moto_atv": null
+        },
+        {
+          "excel_row": 52,
+          "auction": "IAAI",
+          "location": "COLTON - California",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 350
+            }
+          ],
+          "moto_atv": 300
+        },
+        {
+          "excel_row": 53,
+          "auction": "IAAI",
+          "location": "COLUMBIA - South Carolina",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 425
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 54,
+          "auction": "IAAI",
+          "location": "COLUMBUS - Ohio",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 700
+            }
+          ],
+          "moto_atv": 425
+        },
+        {
+          "excel_row": 55,
+          "auction": "IAAI",
+          "location": "CONCORD - North Carolina",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 450
+            }
+          ],
+          "moto_atv": null
+        },
+        {
+          "excel_row": 56,
+          "auction": "IAAI",
+          "location": "CORPUS CHRISTI - Texas",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 425
+            }
+          ],
+          "moto_atv": 375
+        },
+        {
+          "excel_row": 57,
+          "auction": "IAAI",
+          "location": "CULPEPER - Virginia",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 450
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 58,
+          "auction": "IAAI",
+          "location": "DALLAS - Texas",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 425
+            }
+          ],
+          "moto_atv": 335
+        },
+        {
+          "excel_row": 59,
+          "auction": "IAAI",
+          "location": "DAVENPORT - Iowa",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 475
+            }
+          ],
+          "moto_atv": 400
+        },
+        {
+          "excel_row": 60,
+          "auction": "IAAI",
+          "location": "DAYTON - Ohio",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 700
+            }
+          ],
+          "moto_atv": 425
+        },
+        {
+          "excel_row": 61,
+          "auction": "IAAI",
+          "location": "DENVER - Colorado",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 800
+            }
+          ],
+          "moto_atv": 600
+        },
+        {
+          "excel_row": 62,
+          "auction": "IAAI",
+          "location": "DENVER EAST - Colorado",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 800
+            }
+          ],
+          "moto_atv": 600
+        },
+        {
+          "excel_row": 63,
+          "auction": "IAAI",
+          "location": "DES MOINES - Iowa",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 550
+            }
+          ],
+          "moto_atv": 375
+        },
+        {
+          "excel_row": 64,
+          "auction": "IAAI",
+          "location": "DETROIT - Michigan",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 550
+            }
+          ],
+          "moto_atv": 425
+        },
+        {
+          "excel_row": 65,
+          "auction": "IAAI",
+          "location": "DOTHAN - Alabama",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 525
+            }
+          ],
+          "moto_atv": 450
+        },
+        {
+          "excel_row": 66,
+          "auction": "IAAI",
+          "location": "DUNDALK - Maryland",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 450
+            }
+          ],
+          "moto_atv": null
+        },
+        {
+          "excel_row": 67,
+          "auction": "IAAI",
+          "location": "EAST BAY - California",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 550
+            }
+          ],
+          "moto_atv": 450
+        },
+        {
+          "excel_row": 68,
+          "auction": "IAAI",
+          "location": "Elkton - Maryland",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 500
+            }
+          ],
+          "moto_atv": null
+        },
+        {
+          "excel_row": 69,
+          "auction": "IAAI",
+          "location": "Englishtown - New Jersey",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 300
+            }
+          ],
+          "moto_atv": null
+        },
+        {
+          "excel_row": 70,
+          "auction": "IAAI",
+          "location": "EL PASO - Texas",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 575
+            }
+          ],
+          "moto_atv": 525
+        },
+        {
+          "excel_row": 71,
+          "auction": "IAAI",
+          "location": "ERIE - Pennsylvania",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 650
+            }
+          ],
+          "moto_atv": 575
+        },
+        {
+          "excel_row": 72,
+          "auction": "IAAI",
+          "location": "EUGENE - Oregon",
+          "routes": [
+            {
+              "port": "Seattle",
+              "price": 525
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 73,
+          "auction": "IAAI",
+          "location": "FARGO - North Dakota",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 800
+            }
+          ],
+          "moto_atv": 650
+        },
+        {
+          "excel_row": 74,
+          "auction": "IAAI",
+          "location": "FAYETTEVILLE - Arkansas",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 625
+            }
+          ],
+          "moto_atv": 525
+        },
+        {
+          "excel_row": 75,
+          "auction": "IAAI",
+          "location": "FLINT - Michigan",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 600
+            }
+          ],
+          "moto_atv": 425
+        },
+        {
+          "excel_row": 76,
+          "auction": "IAAI",
+          "location": "FONTANA - California",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 350
+            }
+          ],
+          "moto_atv": 330
+        },
+        {
+          "excel_row": 77,
+          "auction": "IAAI",
+          "location": "FORT MYERS - Florida",
+          "routes": [
+            {
+              "port": "Miami",
+              "price": 400
+            }
+          ],
+          "moto_atv": {
+            "status": "manual_check",
+            "raw": "Call for price"
+          }
+        },
+        {
+          "excel_row": 78,
+          "auction": "IAAI",
+          "location": "FORT PIERCE - Florida",
+          "routes": [
+            {
+              "port": "Miami",
+              "price": 350
+            }
+          ],
+          "moto_atv": 330
+        },
+        {
+          "excel_row": 79,
+          "auction": "IAAI",
+          "location": "FREMONT - California",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 550
+            }
+          ],
+          "moto_atv": 450
+        },
+        {
+          "excel_row": 80,
+          "auction": "IAAI",
+          "location": "FRESNO - California",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 525
+            }
+          ],
+          "moto_atv": 450
+        },
+        {
+          "excel_row": 81,
+          "auction": "IAAI",
+          "location": "Fort Wayne - Indiana",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 450
+            }
+          ],
+          "moto_atv": null
+        },
+        {
+          "excel_row": 82,
+          "auction": "IAAI",
+          "location": "Fort Worth North - Texas",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 425
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 83,
+          "auction": "IAAI",
+          "location": "Fredericksburg-South - Virginia",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 450
+            }
+          ],
+          "moto_atv": {
+            "status": "manual_check",
+            "raw": "Call for price"
+          }
+        },
+        {
+          "excel_row": 84,
+          "auction": "IAAI",
+          "location": "Gastonia",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 450
+            }
+          ],
+          "moto_atv": 100
+        },
+        {
+          "excel_row": 85,
+          "auction": "IAAI",
+          "location": "GRAND RAPIDS - Michigan",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 550
+            }
+          ],
+          "moto_atv": 400
+        },
+        {
+          "excel_row": 86,
+          "auction": "IAAI",
+          "location": "GREENSBORO - North Carolina",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 450
+            }
+          ],
+          "moto_atv": 375
+        },
+        {
+          "excel_row": 87,
+          "auction": "IAAI",
+          "location": "GREENVILLE - South Carolina",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 475
+            }
+          ],
+          "moto_atv": 375
+        },
+        {
+          "excel_row": 88,
+          "auction": "IAAI",
+          "location": "GRENADA - Mississippi",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 575
+            }
+          ],
+          "moto_atv": 500
+        },
+        {
+          "excel_row": 89,
+          "auction": "IAAI",
+          "location": "GULF COAST - Mississippi",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 550
+            }
+          ],
+          "moto_atv": {
+            "status": "manual_check",
+            "raw": "Call for price"
+          }
+        },
+        {
+          "excel_row": 90,
+          "auction": "IAAI",
+          "location": "GULF COAST - Mississippi",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 600
+            }
+          ],
+          "moto_atv": {
+            "status": "manual_check",
+            "raw": "Call for price"
+          }
+        },
+        {
+          "excel_row": 91,
+          "auction": "IAAI",
+          "location": "HARTFORD - Connecticut",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 400
+            }
+          ],
+          "moto_atv": 325
+        },
+        {
+          "excel_row": 92,
+          "auction": "IAAI",
+          "location": "HARTFORD-SOUTH - Connecticut",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 400
+            }
+          ],
+          "moto_atv": 325
+        },
+        {
+          "excel_row": 93,
+          "auction": "IAAI",
+          "location": "HIGH DESERT - California",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 450
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 94,
+          "auction": "IAAI",
+          "location": "HIGH POINT - North Carolina",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 450
+            }
+          ],
+          "moto_atv": null
+        },
+        {
+          "excel_row": 95,
+          "auction": "IAAI",
+          "location": "HONOLULU - Hawaii",
+          "routes": [
+            {
+              "port": "Ноnululu",
+              "price": 250
+            }
+          ],
+          "moto_atv": {
+            "status": "manual_check",
+            "raw": "Call for price"
+          }
+        },
+        {
+          "excel_row": 96,
+          "auction": "IAAI",
+          "location": "HOUSTON - Texas",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 330
+            }
+          ],
+          "moto_atv": 250
+        },
+        {
+          "excel_row": 97,
+          "auction": "IAAI",
+          "location": "HOUSTON SOUTH - Texas",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 330
+            }
+          ],
+          "moto_atv": 275
+        },
+        {
+          "excel_row": 98,
+          "auction": "IAAI",
+          "location": "HOUSTON-NORTH - Texas",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 330
+            }
+          ],
+          "moto_atv": 250
+        },
+        {
+          "excel_row": 99,
+          "auction": "IAAI",
+          "location": "HUNTSVILLE - Alabama",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 600
+            }
+          ],
+          "moto_atv": 450
+        },
+        {
+          "excel_row": 100,
+          "auction": "IAAI",
+          "location": "IAA CAT HOUSTON - Texas",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 350
+            }
+          ],
+          "moto_atv": 250
+        },
+        {
+          "excel_row": 101,
+          "auction": "IAAI",
+          "location": "IAA Dallas/Ft Worth - Texas",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 425
+            }
+          ],
+          "moto_atv": {
+            "status": "manual_check",
+            "raw": "Call for price"
+          }
+        },
+        {
+          "excel_row": 102,
+          "auction": "IAAI",
+          "location": "INDIANAPOLIS South - Indiana",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 750
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 103,
+          "auction": "IAAI",
+          "location": "JACKSON - Mississippi",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 575
+            }
+          ],
+          "moto_atv": 475
+        },
+        {
+          "excel_row": 104,
+          "auction": "IAAI",
+          "location": "JACKSONVILLE - Florida",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 375
+            }
+          ],
+          "moto_atv": 300
+        },
+        {
+          "excel_row": 105,
+          "auction": "IAAI",
+          "location": "KANSAS CITY - Kansas",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 775
+            }
+          ],
+          "moto_atv": 425
+        },
+        {
+          "excel_row": 106,
+          "auction": "IAAI",
+          "location": "KNOXVILLE - Tennessee",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 550
+            }
+          ],
+          "moto_atv": 450
+        },
+        {
+          "excel_row": 107,
+          "auction": "IAAI",
+          "location": "LAFAYETTE - Louisiana",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 525
+            }
+          ],
+          "moto_atv": 375
+        },
+        {
+          "excel_row": 108,
+          "auction": "IAAI",
+          "location": "LAKE CITY - Georgia - IAAI",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 450
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 109,
+          "auction": "IAAI",
+          "location": "LAS VEGAS - Nevada",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 475
+            }
+          ],
+          "moto_atv": 400
+        },
+        {
+          "excel_row": 110,
+          "auction": "IAAI",
+          "location": "LAUREL - Maryland",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 450
+            }
+          ],
+          "moto_atv": 375
+        },
+        {
+          "excel_row": 111,
+          "auction": "IAAI",
+          "location": "LINCOLN - Illinois",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 450
+            }
+          ],
+          "moto_atv": 400
+        },
+        {
+          "excel_row": 112,
+          "auction": "IAAI",
+          "location": "LITTLE ROCK - Arkansas",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 600
+            }
+          ],
+          "moto_atv": 500
+        },
+        {
+          "excel_row": 113,
+          "auction": "IAAI",
+          "location": "LONG ISLAND - New York",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 400
+            }
+          ],
+          "moto_atv": 325
+        },
+        {
+          "excel_row": 114,
+          "auction": "IAAI",
+          "location": "LONGVIEW - Texas",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 425
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 115,
+          "auction": "IAAI",
+          "location": "LOS ANGELES - California",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 310
+            }
+          ],
+          "moto_atv": 300
+        },
+        {
+          "excel_row": 116,
+          "auction": "IAAI",
+          "location": "LOUISVILLE - Kentucky",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 700
+            }
+          ],
+          "moto_atv": 425
+        },
+        {
+          "excel_row": 117,
+          "auction": "IAAI",
+          "location": "LOUISVILLE NORTH - Kentucky",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 700
+            }
+          ],
+          "moto_atv": 425
+        },
+        {
+          "excel_row": 118,
+          "auction": "IAAI",
+          "location": "LUBBOCK - Texas",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 600
+            }
+          ],
+          "moto_atv": 500
+        },
+        {
+          "excel_row": 119,
+          "auction": "IAAI",
+          "location": "Lexington - South Carolina",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 450
+            }
+          ],
+          "moto_atv": 400
+        },
+        {
+          "excel_row": 120,
+          "auction": "IAAI",
+          "location": "MACON - Georgia",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 425
+            }
+          ],
+          "moto_atv": 325
+        },
+        {
+          "excel_row": 121,
+          "auction": "IAAI",
+          "location": "MANCHESTER - New Hampshire",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 575
+            }
+          ],
+          "moto_atv": 450
+        },
+        {
+          "excel_row": 122,
+          "auction": "IAAI",
+          "location": "MCALLEN - Texas",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 500
+            }
+          ],
+          "moto_atv": 435
+        },
+        {
+          "excel_row": 123,
+          "auction": "IAAI",
+          "location": "MEMPHIS - Tennessee",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 650
+            }
+          ],
+          "moto_atv": 475
+        },
+        {
+          "excel_row": 124,
+          "auction": "IAAI",
+          "location": "METRO DC - Maryland",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 450
+            }
+          ],
+          "moto_atv": 375
+        },
+        {
+          "excel_row": 125,
+          "auction": "IAAI",
+          "location": "MIAMI - Florida",
+          "routes": [
+            {
+              "port": "Miami",
+              "price": 275
+            }
+          ],
+          "moto_atv": 250
+        },
+        {
+          "excel_row": 126,
+          "auction": "IAAI",
+          "location": "MIAMI-NORTH - Florida",
+          "routes": [
+            {
+              "port": "Miami",
+              "price": 300
+            }
+          ],
+          "moto_atv": 275
+        },
+        {
+          "excel_row": 127,
+          "auction": "IAAI",
+          "location": "MILWAUKEE - Wisconsin",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 375
+            }
+          ],
+          "moto_atv": 325
+        },
+        {
+          "excel_row": 128,
+          "auction": "IAAI",
+          "location": "MINNEAPOLIS/ST. PAUL - Minnesota",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 600
+            }
+          ],
+          "moto_atv": 450
+        },
+        {
+          "excel_row": 129,
+          "auction": "IAAI",
+          "location": "MISSOULA - Montana",
+          "routes": [
+            {
+              "port": "Seattle",
+              "price": 750
+            }
+          ],
+          "moto_atv": 700
+        },
+        {
+          "excel_row": 130,
+          "auction": "IAAI",
+          "location": "Monticello - New York - IAAI",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 400
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 131,
+          "auction": "IAAI",
+          "location": "NASHVILLE - Tennessee",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 550
+            }
+          ],
+          "moto_atv": {
+            "status": "manual_check",
+            "raw": "Call for price"
+          }
+        },
+        {
+          "excel_row": 132,
+          "auction": "IAAI",
+          "location": "NEW CASTLE - Delaware",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 400
+            }
+          ],
+          "moto_atv": 375
+        },
+        {
+          "excel_row": 133,
+          "auction": "IAAI",
+          "location": "NEW ORLEANS EAST - Louisiana",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 575
+            }
+          ],
+          "moto_atv": 450
+        },
+        {
+          "excel_row": 134,
+          "auction": "IAAI",
+          "location": "NEWBURGH - New York",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 400
+            }
+          ],
+          "moto_atv": 325
+        },
+        {
+          "excel_row": 135,
+          "auction": "IAAI",
+          "location": "NORTH HOLLYWOOD - California",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 350
+            }
+          ],
+          "moto_atv": 330
+        },
+        {
+          "excel_row": 136,
+          "auction": "IAAI",
+          "location": "NORTHERN NEW JERSEY - New Jersey",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 300
+            }
+          ],
+          "moto_atv": 250
+        },
+        {
+          "excel_row": 137,
+          "auction": "IAAI",
+          "location": "NORTHERN VIRGINIA - Virginia",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 450
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 138,
+          "auction": "IAAI",
+          "location": "New Orleans and Louisiana Flood - Louisiana",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 575
+            }
+          ],
+          "moto_atv": 450
+        },
+        {
+          "excel_row": 139,
+          "auction": "IAAI",
+          "location": "OKLAHOMA CITY - Oklahoma",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 550
+            }
+          ],
+          "moto_atv": 450
+        },
+        {
+          "excel_row": 140,
+          "auction": "IAAI",
+          "location": "OMAHA - Nebraska",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 600
+            }
+          ],
+          "moto_atv": 450
+        },
+        {
+          "excel_row": 141,
+          "auction": "IAAI",
+          "location": "ORLANDO - Florida",
+          "routes": [
+            {
+              "port": "Miami",
+              "price": 375
+            }
+          ],
+          "moto_atv": {
+            "status": "manual_check",
+            "raw": "Call for price"
+          }
+        },
+        {
+          "excel_row": 142,
+          "auction": "IAAI",
+          "location": "ORLANDO-NORTH - Florida",
+          "routes": [
+            {
+              "port": "Miami",
+              "price": 400
+            }
+          ],
+          "moto_atv": 375
+        },
+        {
+          "excel_row": 143,
+          "auction": "IAAI",
+          "location": "PADUCAH - Kentucky",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": {
+                "status": "manual_check",
+                "raw": "Call for price"
+              }
+            }
+          ],
+          "moto_atv": 525
+        },
+        {
+          "excel_row": 144,
+          "auction": "IAAI",
+          "location": "PENSACOLA - Florida",
+          "routes": [
+            {
+              "port": "Miami",
+              "price": 550
+            }
+          ],
+          "moto_atv": 500
+        },
+        {
+          "excel_row": 145,
+          "auction": "IAAI",
+          "location": "PERMIAN BASIN - Texas",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 600
+            }
+          ],
+          "moto_atv": 500
+        },
+        {
+          "excel_row": 146,
+          "auction": "IAAI",
+          "location": "PHILADELPHIA - Pennsylvania",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 375
+            }
+          ],
+          "moto_atv": 325
+        },
+        {
+          "excel_row": 147,
+          "auction": "IAAI",
+          "location": "PHOENIX - Arizona",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 500
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 148,
+          "auction": "IAAI",
+          "location": "PITTSBURGH - Pennsylvania",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 600
+            }
+          ],
+          "moto_atv": 500
+        },
+        {
+          "excel_row": 149,
+          "auction": "IAAI",
+          "location": "PITTSBURGH-NORTH - Pennsylvania",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 600
+            }
+          ],
+          "moto_atv": 500
+        },
+        {
+          "excel_row": 150,
+          "auction": "IAAI",
+          "location": "PORTAGE - Wisconsin",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 450
+            }
+          ],
+          "moto_atv": 400
+        },
+        {
+          "excel_row": 151,
+          "auction": "IAAI",
+          "location": "PORTLAND - GORHAM - Maine",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 650
+            }
+          ],
+          "moto_atv": 500
+        },
+        {
+          "excel_row": 152,
+          "auction": "IAAI",
+          "location": "PORTLAND - Oregon",
+          "routes": [
+            {
+              "port": "Seattle",
+              "price": 400
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 153,
+          "auction": "IAAI",
+          "location": "PROVIDENCE - Rhode Island",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 500
+            }
+          ],
+          "moto_atv": 425
+        },
+        {
+          "excel_row": 154,
+          "auction": "IAAI",
+          "location": "PULASKI - Virginia",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 550
+            }
+          ],
+          "moto_atv": 475
+        },
+        {
+          "excel_row": 155,
+          "auction": "IAAI",
+          "location": "Philadelphia East - Pennsylvania",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 375
+            }
+          ],
+          "moto_atv": {
+            "status": "manual_check",
+            "raw": "Call for price"
+          }
+        },
+        {
+          "excel_row": 156,
+          "auction": "IAAI",
+          "location": "Portland West - Oregon",
+          "routes": [
+            {
+              "port": "Seattle",
+              "price": 400
+            }
+          ],
+          "moto_atv": 375
+        },
+        {
+          "excel_row": 157,
+          "auction": "IAAI",
+          "location": "RALEIGH - North Carolina",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 450
+            }
+          ],
+          "moto_atv": {
+            "status": "manual_check",
+            "raw": "Call for price"
+          }
+        },
+        {
+          "excel_row": 158,
+          "auction": "IAAI",
+          "location": "RENO - Nevada",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 700
+            }
+          ],
+          "moto_atv": 550
+        },
+        {
+          "excel_row": 159,
+          "auction": "IAAI",
+          "location": "RICHMOND - Virginia",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 400
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 160,
+          "auction": "IAAI",
+          "location": "ROANOKE - Virginia",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 525
+            }
+          ],
+          "moto_atv": 450
+        },
+        {
+          "excel_row": 161,
+          "auction": "IAAI",
+          "location": "ROCHESTER - New York",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 600
+            }
+          ],
+          "moto_atv": 500
+        },
+        {
+          "excel_row": 162,
+          "auction": "IAAI",
+          "location": "ROSEDALE - Maryland",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 500
+            }
+          ],
+          "moto_atv": 425
+        },
+        {
+          "excel_row": 163,
+          "auction": "IAAI",
+          "location": "SACRAMENTO - California",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 625
+            }
+          ],
+          "moto_atv": 450
+        },
+        {
+          "excel_row": 164,
+          "auction": "IAAI",
+          "location": "SALT LAKE CITY - Utah",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 700
+            }
+          ],
+          "moto_atv": 650
+        },
+        {
+          "excel_row": 165,
+          "auction": "IAAI",
+          "location": "SAN ANTONIO - Texas",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 450
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 166,
+          "auction": "IAAI",
+          "location": "SAN ANTONIO-SOUTH - Texas",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 450
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 167,
+          "auction": "IAAI",
+          "location": "SAN DIEGO - California",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 380
+            }
+          ],
+          "moto_atv": 300
+        },
+        {
+          "excel_row": 168,
+          "auction": "IAAI",
+          "location": "SANTA CLARITA - California",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 450
+            }
+          ],
+          "moto_atv": null
+        },
+        {
+          "excel_row": 169,
+          "auction": "IAAI",
+          "location": "SAVANNAH - Georgia",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 275
+            }
+          ],
+          "moto_atv": 250
+        },
+        {
+          "excel_row": 170,
+          "auction": "IAAI",
+          "location": "Sayreville - New Jersey",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 300
+            }
+          ],
+          "moto_atv": null
+        },
+        {
+          "excel_row": 171,
+          "auction": "IAAI",
+          "location": "SCRANTON - Pennsylvania",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 400
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 172,
+          "auction": "IAAI",
+          "location": "SEATTLE - Washington",
+          "routes": [
+            {
+              "port": "Seattle",
+              "price": 300
+            }
+          ],
+          "moto_atv": 250
+        },
+        {
+          "excel_row": 173,
+          "auction": "IAAI",
+          "location": "SHADY SPRING - West Virginia",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 775
+            }
+          ],
+          "moto_atv": {
+            "status": "manual_check",
+            "raw": "Call for price"
+          }
+        },
+        {
+          "excel_row": 174,
+          "auction": "IAAI",
+          "location": "SHREVEPORT - Louisiana",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 465
+            }
+          ],
+          "moto_atv": 375
+        },
+        {
+          "excel_row": 175,
+          "auction": "IAAI",
+          "location": "SIOUX FALLS - South Dakota",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 800
+            }
+          ],
+          "moto_atv": 650
+        },
+        {
+          "excel_row": 176,
+          "auction": "IAAI",
+          "location": "SOUTH BEND - Indiana",
+          "routes": [
+            {
+              "port": "Chicago",
+              "price": 400
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 177,
+          "auction": "IAAI",
+          "location": "SOUTHERN NEW JERSEY - New Jersey",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 350
+            }
+          ],
+          "moto_atv": 300
+        },
+        {
+          "excel_row": 178,
+          "auction": "IAAI",
+          "location": "SPOKANE - Washington",
+          "routes": [
+            {
+              "port": "Seattle",
+              "price": 500
+            }
+          ],
+          "moto_atv": 400
+        },
+        {
+          "excel_row": 179,
+          "auction": "IAAI",
+          "location": "SPRINGFIELD - Missouri",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 775
+            }
+          ],
+          "moto_atv": 425
+        },
+        {
+          "excel_row": 180,
+          "auction": "IAAI",
+          "location": "STOCKTON - California",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 625
+            }
+          ],
+          "moto_atv": 400
+        },
+        {
+          "excel_row": 181,
+          "auction": "IAAI",
+          "location": "ST. LOUIS - Illinois",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 725
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 182,
+          "auction": "IAAI",
+          "location": "SYRACUSE - New York",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 525
+            }
+          ],
+          "moto_atv": 425
+        },
+        {
+          "excel_row": 183,
+          "auction": "IAAI",
+          "location": "Suffolk - Virginia",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 350
+            }
+          ],
+          "moto_atv": 300
+        },
+        {
+          "excel_row": 184,
+          "auction": "IAAI",
+          "location": "TAMPA - Florida",
+          "routes": [
+            {
+              "port": "Miami",
+              "price": 425
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 185,
+          "auction": "IAAI",
+          "location": "TAUNTON - Massachusetts",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 525
+            }
+          ],
+          "moto_atv": 425
+        },
+        {
+          "excel_row": 186,
+          "auction": "IAAI",
+          "location": "TIDEWATER - Virginia",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 350
+            }
+          ],
+          "moto_atv": 300
+        },
+        {
+          "excel_row": 187,
+          "auction": "IAAI",
+          "location": "TIFTON - Georgia",
+          "routes": [
+            {
+              "port": "Savannah",
+              "price": 425
+            }
+          ],
+          "moto_atv": 350
+        },
+        {
+          "excel_row": 188,
+          "auction": "IAAI",
+          "location": "TUCSON - Arizona",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 550
+            }
+          ],
+          "moto_atv": 450
+        },
+        {
+          "excel_row": 189,
+          "auction": "IAAI",
+          "location": "TULSA - Oklahoma",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 625
+            }
+          ],
+          "moto_atv": 525
+        },
+        {
+          "excel_row": 190,
+          "auction": "IAAI",
+          "location": "Tampa North - Florida",
+          "routes": [
+            {
+              "port": "Miami",
+              "price": 375
+            }
+          ],
+          "moto_atv": 375
+        },
+        {
+          "excel_row": 191,
+          "auction": "IAAI",
+          "location": "Templeton - Massachusetts",
+          "routes": [
+            {
+              "port": "NY",
+              "price": 525
+            }
+          ],
+          "moto_atv": 425
+        },
+        {
+          "excel_row": 192,
+          "auction": "IAAI",
+          "location": "WESTERN COLORADO - Colorado",
+          "routes": [
+            {
+              "port": "L.Angeles",
+              "price": 800
+            }
+          ],
+          "moto_atv": {
+            "status": "manual_check",
+            "raw": "Call for price"
+          }
+        },
+        {
+          "excel_row": 193,
+          "auction": "IAAI",
+          "location": "WICHITA - Kansas",
+          "routes": [
+            {
+              "port": "Houston",
+              "price": 700
+            }
+          ],
+          "moto_atv": 600
+        },
+        {
+          "excel_row": 194,
+          "auction": "IAAI",
+          "location": "WILMINGTON - North Carolina",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 525
+            }
+          ],
+          "moto_atv": 425
+        },
+        {
+          "excel_row": 195,
+          "auction": "IAAI",
+          "location": "YORK SPRINGS - Pennsylvania",
+          "routes": [
+            {
+              "port": "Norfolk",
+              "price": 550
+            }
+          ],
+          "moto_atv": 400
+        }
+      ]
+    }
+  },
+  "canada": {
+    "title": "Canadawide Towing to Toronto Office",
+    "headers": [
+      "Auction",
+      "Pick-up City",
+      "Pick-up Province",
+      "Sedan/small SUV",
+      "Pick-up truck/Large SUV",
+      "1 Ton or 6'' Lifted Trucks",
+      "Off-site"
+    ],
+    "locations": [
+      {
+        "excel_row": 3,
+        "auction": "*Copart* Adesa* Manheim* Impact*",
+        "city": "Calgary",
+        "province": "AB",
+        "sedan_small_suv": 1600,
+        "pickup_large_suv": 1800,
+        "one_ton_or_6_lifted_trucks": 2020,
+        "off_site": null
+      },
+      {
+        "excel_row": 4,
+        "auction": "*Copart* Adesa* Manheim* Impact*",
+        "city": "Edmonton",
+        "province": "AB",
+        "sedan_small_suv": 1600,
+        "pickup_large_suv": 1800,
+        "one_ton_or_6_lifted_trucks": 2020,
+        "off_site": {
+          "min": 1900,
+          "max": 2400
+        }
+      },
+      {
+        "excel_row": 5,
+        "auction": "*Copart* Adesa* Manheim* Impact*",
+        "city": "Vancouver",
+        "province": "BC",
+        "sedan_small_suv": 2100,
+        "pickup_large_suv": 2250,
+        "one_ton_or_6_lifted_trucks": 2600,
+        "off_site": {
+          "min": 2100,
+          "max": 2800
+        }
+      },
+      {
+        "excel_row": 6,
+        "auction": "*Copart* Adesa* Manheim* Impact*",
+        "city": "Winippeg",
+        "province": "MB",
+        "sedan_small_suv": 900,
+        "pickup_large_suv": 1100,
+        "one_ton_or_6_lifted_trucks": 1500,
+        "off_site": {
+          "status": "manual_check",
+          "raw": "запрос цены"
+        }
+      },
+      {
+        "excel_row": 7,
+        "auction": "*Copart* Adesa* Manheim* Impact*",
+        "city": "Moncton",
+        "province": "NB",
+        "sedan_small_suv": 1425,
+        "pickup_large_suv": 1625,
+        "one_ton_or_6_lifted_trucks": 2100,
+        "off_site": null
+      },
+      {
+        "excel_row": 8,
+        "auction": "*Copart* Adesa* Manheim* Impact*",
+        "city": "St.Johns",
+        "province": "NL",
+        "sedan_small_suv": 2000,
+        "pickup_large_suv": 2250,
+        "one_ton_or_6_lifted_trucks": 2600,
+        "off_site": null
+      },
+      {
+        "excel_row": 9,
+        "auction": "*Copart* Adesa* Manheim* Impact*",
+        "city": "Halifax",
+        "province": "NS",
+        "sedan_small_suv": 1350,
+        "pickup_large_suv": 1550,
+        "one_ton_or_6_lifted_trucks": 1850,
+        "off_site": null
+      },
+      {
+        "excel_row": 10,
+        "auction": "*Copart* Adesa* Manheim* Impact*",
+        "city": "Hamilton",
+        "province": "ON",
+        "sedan_small_suv": 400,
+        "pickup_large_suv": 600,
+        "one_ton_or_6_lifted_trucks": 800,
+        "off_site": null
+      },
+      {
+        "excel_row": 11,
+        "auction": "*Copart* Adesa* Manheim* Impact*",
+        "city": "Kitchener",
+        "province": "ON",
+        "sedan_small_suv": 250,
+        "pickup_large_suv": 300,
+        "one_ton_or_6_lifted_trucks": 450,
+        "off_site": {
+          "status": "manual_check",
+          "raw": "запрос цены"
+        }
+      },
+      {
+        "excel_row": 12,
+        "auction": "*Copart* Adesa* Manheim* Impact*",
+        "city": "London",
+        "province": "ON",
+        "sedan_small_suv": 400,
+        "pickup_large_suv": 600,
+        "one_ton_or_6_lifted_trucks": 800,
+        "off_site": {
+          "min": 450,
+          "max": 600
+        }
+      },
+      {
+        "excel_row": 13,
+        "auction": "*Copart* Adesa* Manheim* Impact*",
+        "city": "Ottawa",
+        "province": "ON",
+        "sedan_small_suv": 625,
+        "pickup_large_suv": 825,
+        "one_ton_or_6_lifted_trucks": 1025,
+        "off_site": {
+          "min": 700,
+          "max": 850
+        }
+      },
+      {
+        "excel_row": 14,
+        "auction": "*Copart* Adesa* Manheim* Impact*",
+        "city": "Sudbury",
+        "province": "ON",
+        "sedan_small_suv": 650,
+        "pickup_large_suv": 850,
+        "one_ton_or_6_lifted_trucks": 1050,
+        "off_site": null
+      },
+      {
+        "excel_row": 15,
+        "auction": "*Copart* Adesa* Manheim* Impact*",
+        "city": "Toronto",
+        "province": "ON",
+        "sedan_small_suv": 375,
+        "pickup_large_suv": 575,
+        "one_ton_or_6_lifted_trucks": 750,
+        "off_site": {
+          "min": 400,
+          "max": 550
+        }
+      },
+      {
+        "excel_row": 16,
+        "auction": "*Copart* Adesa* Manheim* Impact*",
+        "city": "Montreal",
+        "province": "QC",
+        "sedan_small_suv": 650,
+        "pickup_large_suv": 750,
+        "one_ton_or_6_lifted_trucks": 850,
+        "off_site": {
+          "min": 800,
+          "max": 1050
+        }
+      },
+      {
+        "excel_row": 17,
+        "auction": "*Copart* Adesa* Manheim* Impact*",
+        "city": "Quebec City",
+        "province": "QC",
+        "sedan_small_suv": 775,
+        "pickup_large_suv": 850,
+        "one_ton_or_6_lifted_trucks": 1000,
+        "off_site": {
+          "min": 800,
+          "max": 1050
+        }
+      },
+      {
+        "excel_row": 18,
+        "auction": "*Copart* Adesa* Manheim* Impact*",
+        "city": "Saskatoon",
+        "province": "SK",
+        "sedan_small_suv": 1250,
+        "pickup_large_suv": 1500,
+        "one_ton_or_6_lifted_trucks": 1945,
+        "off_site": {
+          "status": "manual_check",
+          "raw": "запрос цены"
+        }
+      },
+      {
+        "excel_row": 19,
+        "auction": "*Copart* Adesa* Manheim* Impact*",
+        "city": "Regina",
+        "province": "SK",
+        "sedan_small_suv": 1250,
+        "pickup_large_suv": 1500,
+        "one_ton_or_6_lifted_trucks": 1945,
+        "off_site": {
+          "status": "manual_check",
+          "raw": "запрос цены"
+        }
+      }
+    ]
+  }
+}''')
