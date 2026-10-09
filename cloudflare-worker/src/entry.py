@@ -363,6 +363,7 @@ def default_state():
     return {
         "selection_offered": False,
         "selection_declined": False,
+        "selection_reoffer_pending": False,
         "waiting_for_phone": False,
         "lead_sent": False,
         "do_not_ask_phone": False,
@@ -1136,6 +1137,7 @@ async def create_lead(
     state["waiting_for_phone"] = False
     state["selection_offered"] = False
     state["selection_declined"] = False
+    state["selection_reoffer_pending"] = False
 
     try:
         admin_chat_id = int(
@@ -1404,6 +1406,14 @@ class Default(WorkerEntrypoint):
                 state["do_not_ask_phone"] = True
                 state["waiting_for_phone"] = False
 
+            if (
+                state.get("selection_offered")
+                and should_consult_ai(user_text)
+                and not state.get("lead_sent")
+            ):
+                state["selection_offered"] = False
+                state["selection_reoffer_pending"] = True
+
             if user_text == "👨‍💼 Виклик менеджера":
                 if state.get("lead_sent"):
                     answer = "Ваш контакт уже передано менеджеру 👍"
@@ -1502,6 +1512,7 @@ class Default(WorkerEntrypoint):
             if state.get("selection_offered") and is_affirmative(user_text):
                 state["selection_offered"] = False
                 state["selection_declined"] = False
+                state["selection_reoffer_pending"] = False
 
                 if state.get("lead_sent"):
                     answer = "Ваш контакт уже передано менеджеру 👍 Можемо продовжити консультацію."
@@ -1535,6 +1546,7 @@ class Default(WorkerEntrypoint):
             if state.get("selection_offered") and is_negative(user_text):
                 state["selection_offered"] = False
                 state["selection_declined"] = True
+                state["selection_reoffer_pending"] = False
 
                 await save_state(
                     self.env.DB,
@@ -1565,6 +1577,7 @@ class Default(WorkerEntrypoint):
                 state["waiting_for_phone"] = True
                 state["selection_offered"] = False
                 state["selection_declined"] = False
+                state["selection_reoffer_pending"] = False
 
                 await save_state(
                     self.env.DB,
@@ -1609,6 +1622,7 @@ class Default(WorkerEntrypoint):
                 and not state.get("waiting_for_phone")
             ):
                 state["selection_offered"] = True
+                state["selection_reoffer_pending"] = False
 
                 await save_state(
                     self.env.DB,
