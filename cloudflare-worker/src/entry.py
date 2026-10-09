@@ -3,6 +3,7 @@ import re
 from urllib.parse import urlparse
 
 from workers import WorkerEntrypoint, Response, fetch
+from pricing_data import PRICE_DATA
 
 
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
@@ -793,6 +794,488 @@ def memory_context(memory: dict) -> str:
     )
 
 
+
+def normalize_location_text(text: str) -> str:
+    value = normalize(text).upper()
+    value = value.replace("–", "-").replace("—", "-")
+    value = re.sub(r"[^A-Z0-9\- ]+", " ", value)
+    value = value.replace("-", " ")
+    return " ".join(value.split())
+
+
+def is_logistics_question(text: str) -> bool:
+    low = normalize(text).lower()
+    return any(
+        marker in low
+        for marker in (
+            "достав", "логіст", "логист", "shipping",
+            "по сша", "по америк", "по штат",
+            "суш", "мор", "порт",
+        )
+    )
+
+
+def logistics_needs(text: str) -> set:
+    low = normalize(text).lower()
+    needs = set()
+
+    if (
+        "суш" in low
+        or "по сша" in low
+        or "по америк" in low
+        or "по штат" in low
+    ):
+        needs.add("land")
+
+    if "мор" in low:
+        needs.add("sea")
+
+    if "порт" in low:
+        needs.add("port")
+
+    if (
+        "достав" in low
+        or "логіст" in low
+        or "логист" in low
+        or "shipping" in low
+    ) and not needs:
+        needs.add("land")
+
+    return needs
+
+
+def format_verified_price(value):
+    if value is None:
+        return None
+
+    if isinstance(value, (int, float)):
+        if float(value).is_integer():
+            return f"${int(value)}"
+        return f"${value}"
+
+    if isinstance(value, dict):
+        status = value.get("status")
+
+        if status in ("manual_check", "uncertain", "raw_text"):
+            return None
+
+        if "min" in value and "max" in value:
+            return f"${value['min']}–${value['max']}"
+
+        if "value" in value and isinstance(value["value"], (int, float)):
+            return f"${value['value']}"
+
+    return None
+
+
+def matching_price_locations(text: str):
+    """
+    Search BOTH Copart and IAAI.
+    If client writes only a city such as Chicago and all matching
+    auction locations have the same verified tariff, we can safely
+    answer without inventing a specific yard.
+    """
+    search = normalize_location_text(text)
+    search_tokens = set(search.split())
+    rows = []
+
+    for auction in ("Copart", "IAAI"):
+        section = PRICE_DATA.get("usa", {}).get(auction, {})
+
+        for item in section.get("locations", []):
+            full_name = str(item.get("location") or "")
+            if not full_name:
+                continue
+
+            base = full_name.split(" - ")[0].split(" / ")[0].strip()
+            base_n = normalize_location_text(base)
+            base_tokens = base_n.split()
+
+            score = 0
+
+            if base_n and base_n in search:
+                score = 1000 + len(base_n)
+            elif base_tokens:
+                city_token = base_tokens[0]
+                if (
+                    len(city_token) >= 4
+                    and city_token in search_tokens
+                ):
+                    score = 100 + len(city_token)
+
+            if score:
+                rows.append({
+                    "auction": auction,
+                    "location": full_name,
+                    "score": score,
+                    "routes": item.get("routes", []),
+                })
+
+    if not rows:
+        return []
+
+    best = max(row["score"] for row in rows)
+
+    # Exact / full matches win. For generic city-level match,
+    # keep all equal city matches and deduplicate by verified price later.
+    if best >= 1000:
+        rows = [row for row in rows if row["score"] == best]
+    else:
+        rows = [row for row in rows if row["score"] >= 100]
+
+    return rows
+
+
+def vehicle_hint_from_memory(memory: dict) -> str:
+    return " ".join(
+        str(x)
+        for x in (
+            memory.get("brand"),
+            memory.get("model"),
+            (
+                "-".join(memory.get("years", []))
+                if memory.get("years")
+                else None
+            ),
+        )
+        if x
+    ).strip()
+
+
+def obvious_shipping_category(vehicle_text: str):
+    low = normalize(vehicle_text).lower()
+
+    small_markers = (
+        "sedan", "седан", "coupe", "купе", "hatch", "хетч",
+        "wagon", "універсал", "универсал",
+        "a4", "a5", "a6", "a7", "a8",
+        "3 series", "4 series", "5 series", "7 series",
+        "camry", "corolla", "accord", "civic", "k5", "fusion",
+        "model 3", "model s",
+    )
+
+    suv_markers = (
+        "suv", "кросовер", "кроссовер",
+        "escalade", "corsair", "aviator", "navigator",
+        "rav4", "highlander", "crosstrek", "forester", "outback",
+        "rogue", "murano", "pathfinder", "ariya",
+        "edge", "escape", "explorer", "bronco",
+        "cherokee", "grand cherokee", "wrangler",
+        "x1", "x2", "x3", "x4", "x5", "x6", "x7", "xm",
+        "glc", "gle", "gls", "g63", "g550", "g-class", "g class",
+        "q3", "q5", "q7", "q8", "e-tron", "etron",
+        "tucson", "santa fe", "palisade", "ioniq 5",
+        "sportage", "sorento", "telluride", "niro", "ev6", "ev9",
+        "cx-30", "cx-5", "cx-50", "cx-9", "cx-90",
+        "id.4", "tiguan", "touareg",
+        "model y", "model x", "r1s",
+    )
+
+    large_markers = (
+        "dually", "over 20", "3500", "4500", "5500",
+        "f-350", "f350", "f-450", "f450",
+        "silverado 3500", "ram 3500",
+    )
+
+    moto_markers = (
+        "motorcycle", "мотоцикл", "мото ",
+    )
+
+    if any(x in low for x in moto_markers):
+        return "Motorcycle"
+
+    if any(x in low for x in large_markers):
+        return "Extra Large Vehicle/Dually/Over 20 ft."
+
+    if any(x in low for x in suv_markers):
+        return "Crossover/SUV/Standard Truck"
+
+    if any(x in low for x in small_markers):
+        return "Small vehicle/Coupe/Sedan"
+
+    return None
+
+
+async def classify_shipping_category(api_key: str, vehicle_text: str):
+    obvious = obvious_shipping_category(vehicle_text)
+    if obvious:
+        return obvious
+
+    # Internal classifier only. It never calculates a tariff and never
+    # sends a technical consultation to the client.
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "Classify a vehicle into exactly one shipping category. "
+                "Return only one of: SMALL, SUV, LARGE, MOTO. "
+                "SMALL = coupe/sedan/hatch/wagon. "
+                "SUV = crossover/SUV/standard pickup. "
+                "LARGE = dually/extra-large/over 20 ft. "
+                "MOTO = motorcycle."
+            ),
+        },
+        {
+            "role": "user",
+            "content": vehicle_text,
+        },
+    ]
+
+    try:
+        answer = await groq_call(
+            api_key,
+            FALLBACK_MODEL,
+            messages,
+            False,
+        )
+    except Exception:
+        return None
+
+    token = normalize(answer).upper()
+
+    mapping = {
+        "SMALL": "Small vehicle/Coupe/Sedan",
+        "SUV": "Crossover/SUV/Standard Truck",
+        "LARGE": "Extra Large Vehicle/Dually/Over 20 ft.",
+        "MOTO": "Motorcycle",
+    }
+
+    for key, category in mapping.items():
+        if key in token:
+            return category
+
+    return None
+
+
+def build_land_logistics_answer(rows: list, language: str):
+    verified = []
+
+    for row in rows:
+        short = row["location"].split(" - ")[0].strip()
+
+        for route in row.get("routes", []):
+            price = format_verified_price(route.get("price"))
+            port = route.get("port")
+
+            if price and port:
+                verified.append({
+                    "auction": row["auction"],
+                    "location": short,
+                    "port": str(port),
+                    "price": price,
+                })
+
+    if not verified:
+        return None
+
+    unique = {
+        (item["port"], item["price"])
+        for item in verified
+    }
+
+    # Same verified tariff across all matching yards/auctions.
+    if len(unique) == 1:
+        port, price = next(iter(unique))
+        place = verified[0]["location"]
+
+        if language == "ru":
+            return (
+                f"Для {place} доставка по США до порта {port} — {price}."
+            )
+
+        return (
+            f"Для {place} доставка по США до порту {port} — {price}."
+        )
+
+    # Different tariffs: show them instead of guessing.
+    parts = []
+
+    seen = set()
+
+    for item in verified:
+        key = (
+            item["auction"],
+            item["location"],
+            item["port"],
+            item["price"],
+        )
+
+        if key in seen:
+            continue
+
+        seen.add(key)
+
+        parts.append(
+            f"{item['auction']} {item['location']} — "
+            f"{item['price']} до {item['port']}"
+        )
+
+    if language == "ru":
+        return "Тариф зависит от площадки: " + "; ".join(parts) + "."
+
+    return "Тариф залежить від площадки: " + "; ".join(parts) + "."
+
+
+async def build_sea_logistics_answer(
+    rows: list,
+    memory: dict,
+    api_key: str,
+    language: str,
+):
+    vehicle = vehicle_hint_from_memory(memory)
+
+    if not vehicle:
+        return (
+            "Для морського тарифу напишіть модель авто."
+            if language == "uk"
+            else
+            "Для морского тарифа напишите модель автомобиля."
+        )
+
+    category = await classify_shipping_category(
+        api_key,
+        vehicle,
+    )
+
+    if not category:
+        return (
+            "Для морського тарифу уточніть тип авто: "
+            "легкове, кросовер/SUV, пікап чи мотоцикл."
+            if language == "uk"
+            else
+            "Для морского тарифа уточните тип авто: "
+            "легковое, кроссовер/SUV, пикап или мотоцикл."
+        )
+
+    verified = []
+
+    for row in rows:
+        rates = (
+            PRICE_DATA
+            .get("usa", {})
+            .get(row["auction"], {})
+            .get("vehicle_rates", {})
+            .get(category, {})
+        )
+
+        for route in row.get("routes", []):
+            port = str(route.get("port") or "")
+            sea = format_verified_price(
+                rates.get(port)
+            )
+
+            if sea and port:
+                verified.append({
+                    "auction": row["auction"],
+                    "port": port,
+                    "sea": sea,
+                })
+
+    if not verified:
+        return None
+
+    unique = {
+        (item["port"], item["sea"])
+        for item in verified
+    }
+
+    if len(unique) == 1:
+        port, sea = next(iter(unique))
+
+        if language == "ru":
+            return (
+                f"Морской тариф через {port} "
+                f"для этой категории авто — {sea}."
+            )
+
+        return (
+            f"Морський тариф через {port} "
+            f"для цієї категорії авто — {sea}."
+        )
+
+    parts = []
+
+    for item in verified:
+        value = (
+            item["auction"],
+            item["port"],
+            item["sea"],
+        )
+
+        if value not in parts:
+            parts.append(value)
+
+    joined = "; ".join(
+        f"{auction} через {port} — {sea}"
+        for auction, port, sea in parts
+    )
+
+    if language == "ru":
+        return "Морской тариф зависит от аукциона: " + joined + "."
+
+    return "Морський тариф залежить від аукціону: " + joined + "."
+
+
+async def deterministic_logistics_answer(
+    user_text: str,
+    memory: dict,
+    api_key: str,
+):
+    if not is_logistics_question(user_text):
+        return None
+
+    rows = matching_price_locations(user_text)
+
+    if not rows:
+        return None
+
+    lang = memory.get("language", "uk")
+    needs = logistics_needs(user_text)
+    answers = []
+
+    if "land" in needs:
+        land = build_land_logistics_answer(
+            rows,
+            lang,
+        )
+        if land:
+            answers.append(land)
+
+    if "port" in needs and "land" not in needs:
+        ports = []
+
+        for row in rows:
+            for route in row.get("routes", []):
+                port = route.get("port")
+                if port and port not in ports:
+                    ports.append(port)
+
+        if ports:
+            answers.append(
+                (
+                    "Відправка йде через " + ", ".join(ports) + "."
+                    if lang == "uk"
+                    else
+                    "Отправка идёт через " + ", ".join(ports) + "."
+                )
+            )
+
+    if "sea" in needs:
+        sea = await build_sea_logistics_answer(
+            rows,
+            memory,
+            api_key,
+            lang,
+        )
+        if sea:
+            answers.append(sea)
+
+    if answers:
+        return " ".join(answers)
+
+    return None
+
+
 def trim_history(history: list, max_messages: int = 12) -> list:
     result = []
     for item in history[-max_messages:]:
@@ -1235,6 +1718,7 @@ class Default(WorkerEntrypoint):
                 "local_qualification_v2": True,
                 "strict_local_flow": True,
                 "admin_lead_delivery": "configured" if admin_ok else "missing",
+                "verified_logistics": True,
             })
 
         if path != "/telegram-webhook":
@@ -1664,6 +2148,50 @@ class Default(WorkerEntrypoint):
                 memory,
                 state,
             )
+
+            logistics_answer = await deterministic_logistics_answer(
+                user_text,
+                memory,
+                str(self.env.GROQ_API_KEY),
+            )
+
+            if logistics_answer:
+                if (
+                    core_qualification_ready(memory)
+                    and not state.get("lead_sent")
+                ):
+                    state["selection_reoffer_pending"] = True
+                    state["selection_offered"] = False
+
+                memory = remember_assistant_question(
+                    memory,
+                    logistics_answer,
+                )
+
+                final_history = [
+                    *history_with_user,
+                    {
+                        "role": "assistant",
+                        "content": logistics_answer,
+                    },
+                ]
+
+                await save_state(
+                    self.env.DB,
+                    user_id,
+                    chat_id,
+                    final_history,
+                    memory,
+                    state,
+                )
+
+                await send_telegram(
+                    bot_token,
+                    chat_id,
+                    logistics_answer,
+                    reply_markup=main_keyboard(),
+                )
+                return
 
             deterministic = qualification_reply(
                 memory,
