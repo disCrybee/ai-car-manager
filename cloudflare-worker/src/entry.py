@@ -199,6 +199,144 @@ def detect_trim(text: str):
     return None
 
 
+def detect_budget(text: str):
+    low = text.lower()
+    if not any(x in low for x in ("бюдж", "$", "дол", "usd", "під ключ", "под ключ")):
+        return None
+
+    m = re.search(
+        r"(?i)(?:\$\s*)?(\d{1,3}(?:[ .]\d{3})+|\d{4,6})(?:\s*(?:\$|usd|дол(?:ар(?:ів|ов)?)?))?",
+        text,
+    )
+    if not m:
+        return normalize(text)[:100]
+
+    amount = m.group(1).replace(" ", "")
+    suffix = " під ключ" if "під ключ" in low else (" под ключ" if "под ключ" in low else "")
+    return f"${amount}{suffix}"
+
+
+def detect_engine(text: str):
+    low = text.lower()
+    if not any(x in low for x in ("двигун", "двигател", "мотор", "бензин", "дизел", "гібрид", "гибрид")):
+        return None
+    return normalize(text)[:100]
+
+
+def detect_battery(text: str):
+    low = text.lower()
+    if not any(x in low for x in ("батар", "квт", "kwh")):
+        return None
+    return normalize(text)[:100]
+
+
+def default_state():
+    return {
+        "selection_offered": False,
+        "selection_declined": False,
+        "waiting_for_phone": False,
+        "lead_sent": False,
+        "do_not_ask_phone": False,
+        "phone": None,
+        "ended": False,
+    }
+
+
+def is_affirmative(text: str) -> bool:
+    low = normalize(text).lower()
+    return low in {
+        "так", "да", "так давайте", "давайте", "хочу", "цікаво",
+        "интересно", "добре", "ок", "окей", "гаразд", "хорошо", "погнали",
+        "так, давайте", "да, давайте",
+    }
+
+
+def is_negative(text: str) -> bool:
+    low = normalize(text).lower()
+    return low in {
+        "ні", "нет", "не треба", "не нужно", "поки ні", "пока нет",
+        "не цікаво", "не интересно",
+    }
+
+
+def explicitly_wants_selection(text: str) -> bool:
+    low = normalize(text).lower()
+    phrases = (
+        "підбер", "подбер", "покажіть варіанти", "покажите варианты",
+        "актуальні варіанти", "актуальные варианты",
+        "хочу варіанти", "хочу варианты",
+        "хочу розрахунок", "хочу расчет",
+        "зв'яжіть з менеджером", "свяжите с менеджером",
+        "виклик менеджера", "вызов менеджера",
+    )
+    return any(p in low for p in phrases)
+
+
+def user_forbids_phone_request(text: str) -> bool:
+    low = normalize(text).lower()
+    phrases = (
+        "не проси номер", "не просіть номер", "не просите номер",
+        "номер не дам", "не дам номер", "не хочу давати номер",
+        "не хочу давать номер",
+    )
+    return any(p in low for p in phrases)
+
+
+def looks_like_phone(text: str) -> bool:
+    digits = re.sub(r"\D", "", text)
+    return 10 <= len(digits) <= 15
+
+
+def phone_request_text(language: str) -> str:
+    if language == "ru":
+        return (
+            "Хорошо 👍 Оставьте, пожалуйста, номер телефона или нажмите "
+            "«📱 Поділитися номером» — передам запрос менеджеру на подбор."
+        )
+    return (
+        "Добре 👍 Залиште, будь ласка, номер телефону або натисніть "
+        "«📱 Поділитися номером» — передам запит менеджеру на підбір."
+    )
+
+
+def soft_offer_text(language: str) -> str:
+    if language == "ru":
+        return (
+            "Кстати, если хотите, можем подобрать несколько актуальных вариантов "
+            "под эти параметры и показать, что сейчас есть на торгах. Интересно?"
+        )
+    return (
+        "До речі, якщо хочете, можемо підібрати кілька актуальних варіантів "
+        "під ці параметри й показати, що зараз є на торгах. Цікаво?"
+    )
+
+
+def main_keyboard():
+    return {
+        "keyboard": [
+            [
+                {
+                    "text": "📱 Поділитися номером",
+                    "request_contact": True,
+                },
+                {
+                    "text": "👨‍💼 Виклик менеджера",
+                },
+            ],
+            [
+                {
+                    "text": "🔄 Почати новий чат",
+                },
+                {
+                    "text": "✅ Завершити чат",
+                },
+            ],
+        ],
+        "resize_keyboard": True,
+        "input_field_placeholder": "Напишіть повідомлення...",
+    }
+
+
 def update_memory(memory: dict, text: str):
     memory = dict(memory or {})
     changed = set()
@@ -233,6 +371,21 @@ def update_memory(memory: dict, text: str):
         memory["trim"] = trim
         changed.add("trim")
 
+    budget = detect_budget(text)
+    if budget and budget != memory.get("budget"):
+        memory["budget"] = budget
+        changed.add("budget")
+
+    engine = detect_engine(text)
+    if engine and engine != memory.get("engine"):
+        memory["engine"] = engine
+        changed.add("engine")
+
+    battery = detect_battery(text)
+    if battery and battery != memory.get("battery"):
+        memory["battery"] = battery
+        changed.add("battery")
+
     memory["language"] = detect_language(text)
 
     facts = list(memory.get("client_facts") or [])
@@ -255,7 +408,7 @@ def vehicle_label(memory: dict) -> str:
     return " ".join(parts).strip()
 
 
-def qualification_reply(memory: dict, changed: set, user_text: str):
+def qualification_reply(memory: dict, state: dict, changed: set, user_text: str):
     if is_question(user_text):
         return None
 
@@ -267,7 +420,9 @@ def qualification_reply(memory: dict, changed: set, user_text: str):
     lang = memory.get("language", "uk")
     vehicle = vehicle_label(memory)
 
-    if not changed.intersection({"brand", "model", "years", "drive", "mileage", "trim"}):
+    if not changed.intersection({
+        "brand", "model", "years", "drive", "mileage", "trim", "budget"
+    }):
         return None
 
     if brand and not model:
@@ -298,6 +453,15 @@ def qualification_reply(memory: dict, changed: set, user_text: str):
             else f"Хорошо, {vehicle}, пробег {mileage}. По комплектации есть пожелания?"
         )
 
+    if (
+        brand and model and years and mileage and trim
+        and not state.get("lead_sent")
+        and not state.get("selection_offered")
+        and not state.get("selection_declined")
+    ):
+        state["selection_offered"] = True
+        return soft_offer_text(lang)
+
     return None
 
 
@@ -310,6 +474,9 @@ def memory_context(memory: dict) -> str:
         ("drive", "Привід"),
         ("mileage", "Пробіг"),
         ("trim", "Комплектація"),
+        ("budget", "Бюджет"),
+        ("engine", "Двигун"),
+        ("battery", "Батарея"),
     ):
         value = memory.get(key)
         if not value:
@@ -361,14 +528,32 @@ async def ensure_schema(db):
         """
     ).run()
 
+    await db.prepare(
+        """
+        CREATE TABLE IF NOT EXISTS leads (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            chat_id INTEGER NOT NULL,
+            phone TEXT,
+            summary TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    ).run()
+
 
 async def load_state(db, user_id: int):
     row = await db.prepare(
-        "SELECT history_json, memory_json FROM dialog_state WHERE user_id = ?1 LIMIT 1"
+        """
+        SELECT history_json, memory_json, state_json
+        FROM dialog_state
+        WHERE user_id = ?1
+        LIMIT 1
+        """
     ).bind(user_id).first()
 
     if not row:
-        return [], {}
+        return [], {}, default_state()
 
     try:
         history = json.loads(str(row["history_json"]))
@@ -380,10 +565,25 @@ async def load_state(db, user_id: int):
     except Exception:
         memory = {}
 
-    return trim_history(history), memory
+    try:
+        state = json.loads(str(row["state_json"]))
+    except Exception:
+        state = {}
+
+    merged_state = default_state()
+    merged_state.update(state or {})
+
+    return trim_history(history), memory, merged_state
 
 
-async def save_state(db, user_id: int, chat_id: int, history: list, memory: dict):
+async def save_state(
+    db,
+    user_id: int,
+    chat_id: int,
+    history: list,
+    memory: dict,
+    state: dict,
+):
     history_json = json.dumps(
         trim_history(history),
         ensure_ascii=False,
@@ -396,19 +596,32 @@ async def save_state(db, user_id: int, chat_id: int, history: list, memory: dict
         separators=(",", ":"),
     )
 
+    state_json = json.dumps(
+        state,
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+
     await db.prepare(
         """
         INSERT INTO dialog_state (
             user_id, chat_id, history_json, memory_json, state_json, updated_at
         )
-        VALUES (?1, ?2, ?3, ?4, '{}', CURRENT_TIMESTAMP)
+        VALUES (?1, ?2, ?3, ?4, ?5, CURRENT_TIMESTAMP)
         ON CONFLICT(user_id) DO UPDATE SET
             chat_id = excluded.chat_id,
             history_json = excluded.history_json,
             memory_json = excluded.memory_json,
+            state_json = excluded.state_json,
             updated_at = CURRENT_TIMESTAMP
         """
-    ).bind(user_id, chat_id, history_json, memory_json).run()
+    ).bind(
+        user_id,
+        chat_id,
+        history_json,
+        memory_json,
+        state_json,
+    ).run()
 
 
 async def reset_state(db, user_id: int):
@@ -504,16 +717,29 @@ async def ask_groq(api_key: str, history: list, memory: dict, user_text: str):
     )
 
 
-async def send_telegram(bot_token: str, chat_id: int, text: str):
+async def send_telegram(
+    bot_token: str,
+    chat_id: int,
+    text: str,
+    reply_markup=None,
+):
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+
+    payload = {
+        "chat_id": chat_id,
+        "text": text,
+    }
+
+    if reply_markup is not None:
+        payload["reply_markup"] = reply_markup
 
     response = await fetch(
         url,
         method="POST",
-        body=json.dumps({
-            "chat_id": chat_id,
-            "text": text,
-        }, ensure_ascii=False),
+        body=json.dumps(
+            payload,
+            ensure_ascii=False,
+        ),
         headers={
             "Content-Type": "application/json",
         },
@@ -525,6 +751,116 @@ async def send_telegram(bot_token: str, chat_id: int, text: str):
         raise RuntimeError(
             f"Telegram sendMessage HTTP {response.status}: {body[:500]}"
         )
+
+
+def lead_summary(memory: dict) -> str:
+    vehicle = " ".join(
+        x for x in (
+            memory.get("brand"),
+            memory.get("model"),
+        )
+        if x
+    ).strip() or "не вказано"
+
+    years = ", ".join(memory.get("years", [])) or "не вказано"
+    budget = memory.get("budget") or "не вказано"
+    mileage = memory.get("mileage") or "не вказано"
+    trim = memory.get("trim") or "не вказано"
+
+    technical = " / ".join(
+        x for x in (
+            memory.get("engine"),
+            memory.get("battery"),
+            memory.get("drive"),
+        )
+        if x
+    ) or "не вказано"
+
+    preferences = "; ".join(
+        memory.get("client_facts", [])[-6:]
+    ) or "не вказано"
+
+    return (
+        f"Авто: {vehicle}\n"
+        f"Рік: {years}\n"
+        f"Бюджет: {budget}\n"
+        f"Пробіг: {mileage}\n"
+        f"Комплектація: {trim}\n"
+        f"Двигун / батарея / привід: {technical}\n"
+        f"Побажання: {preferences}"
+    )
+
+
+async def create_lead(
+    env,
+    sender: dict,
+    user_id: int,
+    chat_id: int,
+    phone: str,
+    memory: dict,
+    state: dict,
+):
+    if state.get("lead_sent"):
+        return False
+
+    first_name = normalize(sender.get("first_name"))
+    last_name = normalize(sender.get("last_name"))
+    name = normalize(f"{first_name} {last_name}") or "Без імені"
+
+    username_raw = normalize(sender.get("username"))
+    username = f"@{username_raw}" if username_raw else "немає"
+
+    summary = lead_summary(memory)
+
+    await env.DB.prepare(
+        """
+        INSERT INTO leads (
+            user_id,
+            chat_id,
+            phone,
+            summary,
+            created_at
+        )
+        VALUES (?1, ?2, ?3, ?4, CURRENT_TIMESTAMP)
+        """
+    ).bind(
+        user_id,
+        chat_id,
+        phone,
+        summary,
+    ).run()
+
+    admin_chat_id = None
+    try:
+        admin_chat_id = int(str(env.ADMIN_CHAT_ID))
+    except Exception:
+        admin_chat_id = None
+
+    if admin_chat_id:
+        card = (
+            "🔥 НОВИЙ ЛІД\n\n"
+            f"Ім'я: {name}\n"
+            f"Username: {username}\n"
+            f"Telegram ID: {user_id}\n"
+            f"Телефон: {phone}\n\n"
+            f"{summary}"
+        )
+
+        await send_telegram(
+            str(env.BOT_TOKEN),
+            admin_chat_id,
+            card,
+        )
+    else:
+        print("ADMIN_CHAT_ID is not configured; lead saved only to D1")
+
+    state["lead_sent"] = True
+    state["waiting_for_phone"] = False
+    state["selection_offered"] = False
+    state["selection_declined"] = False
+    state["phone"] = phone
+
+    return True
 
 
 class Default(WorkerEntrypoint):
@@ -549,6 +885,11 @@ class Default(WorkerEntrypoint):
             except Exception:
                 telegram_ok = False
 
+            try:
+                admin_ok = bool(str(self.env.ADMIN_CHAT_ID))
+            except Exception:
+                admin_ok = False
+
             return Response.json({
                 "ok": db_ok and groq_ok and telegram_ok,
                 "service": "auction-auto-bot",
@@ -556,7 +897,9 @@ class Default(WorkerEntrypoint):
                 "d1": db_ok,
                 "groq_configured": groq_ok,
                 "telegram_configured": telegram_ok,
+                "admin_configured": admin_ok,
                 "async_webhook": True,
+                "lead_flow": True,
             })
 
         if path != "/telegram-webhook":
@@ -601,6 +944,7 @@ class Default(WorkerEntrypoint):
             chat_id = chat.get("id")
             user_id = sender.get("id") or chat_id
             user_text = normalize(message.get("text"))
+            contact = message.get("contact") or {}
 
             if not chat_id or not user_id:
                 return
@@ -609,7 +953,7 @@ class Default(WorkerEntrypoint):
             user_id = int(user_id)
             bot_token = str(self.env.BOT_TOKEN)
 
-            if user_text in ("/start", "/newchat", "/reset"):
+            if user_text in ("/start", "/newchat", "/reset", "🔄 Почати новий чат"):
                 await reset_state(
                     self.env.DB,
                     user_id,
@@ -621,6 +965,73 @@ class Default(WorkerEntrypoint):
                     "Вітаю! Я AI-консультант Auction Auto 👋\n"
                     "Допоможу зорієнтуватися по автомобілях із США. "
                     "Який автомобіль Вас цікавить?",
+                    reply_markup=main_keyboard(),
+                )
+                return
+
+            history, memory, state = await load_state(
+                self.env.DB,
+                user_id,
+            )
+
+            if user_text == "✅ Завершити чат":
+                state["ended"] = True
+                await save_state(
+                    self.env.DB,
+                    user_id,
+                    chat_id,
+                    history,
+                    memory,
+                    state,
+                )
+                await send_telegram(
+                    bot_token,
+                    chat_id,
+                    "Чат завершено. Якщо захочете продовжити — натисніть «🔄 Почати новий чат».",
+                    reply_markup=main_keyboard(),
+                )
+                return
+
+            if state.get("ended"):
+                await send_telegram(
+                    bot_token,
+                    chat_id,
+                    "Цей діалог завершено. Натисніть «🔄 Почати новий чат», щоб продовжити.",
+                    reply_markup=main_keyboard(),
+                )
+                return
+
+            phone = normalize(contact.get("phone_number"))
+            if phone:
+                created = await create_lead(
+                    self.env,
+                    sender,
+                    user_id,
+                    chat_id,
+                    phone,
+                    memory,
+                    state,
+                )
+
+                await save_state(
+                    self.env.DB,
+                    user_id,
+                    chat_id,
+                    history,
+                    memory,
+                    state,
+                )
+
+                await send_telegram(
+                    bot_token,
+                    chat_id,
+                    (
+                        "Дякую 👍 Передам Ваш контакт менеджеру. "
+                        "Він перегляне актуальні варіанти та зв'яжеться з Вами."
+                        if created
+                        else "Ваш контакт уже передано менеджеру 👍 Можемо продовжити консультацію."
+                    ),
+                    reply_markup=main_keyboard(),
                 )
                 return
 
@@ -629,13 +1040,200 @@ class Default(WorkerEntrypoint):
                     bot_token,
                     chat_id,
                     "Поки що напишіть запит текстом 🙂",
+                    reply_markup=main_keyboard(),
                 )
                 return
 
-            history, memory = await load_state(
-                self.env.DB,
-                user_id,
-            )
+            if user_forbids_phone_request(user_text):
+                state["do_not_ask_phone"] = True
+                state["waiting_for_phone"] = False
+
+            if user_text == "👨‍💼 Виклик менеджера":
+                if state.get("lead_sent"):
+                    answer = "Ваш контакт уже передано менеджеру 👍"
+                elif state.get("do_not_ask_phone"):
+                    answer = "Добре. Можемо продовжити консультацію тут — номер просити не буду."
+                else:
+                    state["waiting_for_phone"] = True
+                    state["selection_offered"] = False
+                    answer = phone_request_text(
+                        memory.get("language", "uk")
+                    )
+
+                await save_state(
+                    self.env.DB,
+                    user_id,
+                    chat_id,
+                    history,
+                    memory,
+                    state,
+                )
+                await send_telegram(
+                    bot_token,
+                    chat_id,
+                    answer,
+                    reply_markup=main_keyboard(),
+                )
+                return
+
+            if user_text == "📱 Поділитися номером":
+                if state.get("lead_sent"):
+                    answer = "Ваш контакт уже передано менеджеру 👍"
+                else:
+                    state["waiting_for_phone"] = True
+                    answer = phone_request_text(
+                        memory.get("language", "uk")
+                    )
+
+                await save_state(
+                    self.env.DB,
+                    user_id,
+                    chat_id,
+                    history,
+                    memory,
+                    state,
+                )
+                await send_telegram(
+                    bot_token,
+                    chat_id,
+                    answer,
+                    reply_markup=main_keyboard(),
+                )
+                return
+
+            if state.get("waiting_for_phone") and looks_like_phone(user_text):
+                created = await create_lead(
+                    self.env,
+                    sender,
+                    user_id,
+                    chat_id,
+                    user_text,
+                    memory,
+                    state,
+                )
+
+                await save_state(
+                    self.env.DB,
+                    user_id,
+                    chat_id,
+                    history,
+                    memory,
+                    state,
+                )
+
+                await send_telegram(
+                    bot_token,
+                    chat_id,
+                    (
+                        "Дякую 👍 Передам Ваш контакт менеджеру. "
+                        "Він перегляне актуальні варіанти та зв'яжеться з Вами."
+                        if created
+                        else "Ваш контакт уже передано менеджеру 👍 Можемо продовжити консультацію."
+                    ),
+                    reply_markup=main_keyboard(),
+                )
+                return
+
+            if state.get("selection_offered") and is_affirmative(user_text):
+                state["selection_offered"] = False
+                state["selection_declined"] = False
+
+                if state.get("lead_sent"):
+                    answer = "Ваш контакт уже передано менеджеру 👍 Можемо продовжити консультацію."
+                elif state.get("do_not_ask_phone"):
+                    answer = (
+                        "Добре 👍 Можемо продовжити консультацію тут. "
+                        "Якщо самі захочете зв'язок із менеджером — скажіть."
+                    )
+                else:
+                    state["waiting_for_phone"] = True
+                    answer = phone_request_text(
+                        memory.get("language", "uk")
+                    )
+
+                await save_state(
+                    self.env.DB,
+                    user_id,
+                    chat_id,
+                    history,
+                    memory,
+                    state,
+                )
+                await send_telegram(
+                    bot_token,
+                    chat_id,
+                    answer,
+                    reply_markup=main_keyboard(),
+                )
+                return
+
+            if state.get("selection_offered") and is_negative(user_text):
+                state["selection_offered"] = False
+                state["selection_declined"] = True
+
+                await save_state(
+                    self.env.DB,
+                    user_id,
+                    chat_id,
+                    history,
+                    memory,
+                    state,
+                )
+
+                await send_telegram(
+                    bot_token,
+                    chat_id,
+                    (
+                        "Добре 👍 Тоді продовжимо консультацію без підбору."
+                        if memory.get("language", "uk") == "uk"
+                        else "Хорошо 👍 Тогда продолжим консультацию без подбора."
+                    ),
+                    reply_markup=main_keyboard(),
+                )
+                return
+
+            if (
+                explicitly_wants_selection(user_text)
+                and not state.get("lead_sent")
+                and not state.get("do_not_ask_phone")
+            ):
+                state["waiting_for_phone"] = True
+                state["selection_offered"] = False
+                state["selection_declined"] = False
+
+                await save_state(
+                    self.env.DB,
+                    user_id,
+                    chat_id,
+                    history,
+                    memory,
+                    state,
+                )
+
+                await send_telegram(
+                    bot_token,
+                    chat_id,
+                    phone_request_text(
+                        memory.get("language", "uk")
+                    ),
+                    reply_markup=main_keyboard(),
+                )
+                return
+
+            if state.get("waiting_for_phone") and is_affirmative(user_text):
+                await send_telegram(
+                    bot_token,
+                    chat_id,
+                    (
+                        "Надішліть, будь ласка, Ваш номер телефону або натисніть "
+                        "«📱 Поділитися номером»."
+                        if memory.get("language", "uk") == "uk"
+                        else "Пришлите, пожалуйста, Ваш номер телефона или нажмите "
+                        "«📱 Поділитися номером»."
+                    ),
+                    reply_markup=main_keyboard(),
+                )
+                return
 
             memory, changed = update_memory(
                 memory,
@@ -650,17 +1248,18 @@ class Default(WorkerEntrypoint):
                 },
             ]
 
-            # Зберігаємо параметри ДО Groq.
             await save_state(
                 self.env.DB,
                 user_id,
                 chat_id,
                 history_with_user,
                 memory,
+                state,
             )
 
             deterministic = qualification_reply(
                 memory,
+                state,
                 changed,
                 user_text,
             )
@@ -707,12 +1306,14 @@ class Default(WorkerEntrypoint):
                 chat_id,
                 final_history,
                 memory,
+                state,
             )
 
             await send_telegram(
                 bot_token,
                 chat_id,
                 answer,
+                reply_markup=main_keyboard(),
             )
 
         except Exception as error:
@@ -720,3 +1321,4 @@ class Default(WorkerEntrypoint):
                 "BACKGROUND PROCESS ERROR:",
                 str(error),
             )
+
