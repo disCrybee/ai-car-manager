@@ -462,6 +462,72 @@ def soft_offer_text(language: str) -> str:
     )
 
 
+def is_simple_acknowledgement(text: str) -> bool:
+    low = normalize(text).lower().strip(" .,!🙂👍")
+    return low in {
+        "зрозуміло", "ясно", "ок", "окей", "добре", "гаразд",
+        "дякую", "спасибі", "понял", "понятно", "ясно", "хорошо",
+        "спасибо",
+    }
+
+
+def core_qualification_ready(memory: dict) -> bool:
+    return bool(
+        memory.get("brand")
+        and memory.get("model")
+        and memory.get("years")
+        and memory.get("mileage")
+        and memory.get("trim")
+    )
+
+
+def next_qualification_reply(memory: dict) -> str | None:
+    lang = memory.get("language", "uk")
+    brand = memory.get("brand")
+    model = memory.get("model")
+    years = memory.get("years")
+    mileage = memory.get("mileage")
+    trim = memory.get("trim")
+    vehicle = vehicle_label(memory)
+
+    if brand and not model:
+        return (
+            f"Яка саме модель {brand} Вас цікавить?"
+            if lang == "uk"
+            else f"Какая именно модель {brand} Вас интересует?"
+        )
+
+    if brand and model and not years:
+        return (
+            f"Добре, {brand} {model}. Який рік або діапазон років розглядаєте?"
+            if lang == "uk"
+            else f"Хорошо, {brand} {model}. Какой год или диапазон лет рассматриваете?"
+        )
+
+    if brand and model and years and not mileage:
+        return (
+            f"Добре, орієнтуємося на {vehicle}. По пробігу є побажання?"
+            if lang == "uk"
+            else f"Хорошо, ориентируемся на {vehicle}. По пробегу есть пожелания?"
+        )
+
+    if brand and model and years and mileage and not trim:
+        return (
+            f"Добре, {vehicle}, пробіг {mileage}. По комплектації є побажання?"
+            if lang == "uk"
+            else f"Хорошо, {vehicle}, пробег {mileage}. По комплектации есть пожелания?"
+        )
+
+    return None
+
+
+def should_consult_ai(text: str) -> bool:
+    # AI is only for a REAL question/consultation request.
+    # Bare answers like "2015-2017", "до 200000 км", "максимальна"
+    # must never trigger a technical lecture.
+    return looks_like_consultation_question(text)
+
+
 def main_keyboard():
     return {
         "keyboard": [
@@ -662,64 +728,36 @@ def vehicle_label(memory: dict) -> str:
 
 
 def qualification_reply(memory: dict, state: dict, changed: set, user_text: str):
-    if looks_like_consultation_question(user_text):
+    # Explicit client questions go to consultation.
+    if should_consult_ai(user_text):
         return None
 
-    # Bare answers to our own qualification questions must stay in Python flow.
-    # Examples: "2015-2017", "до 150 000 км", "максимальна".
-    if looks_like_year_only_reply(user_text):
-        pass
-
-    brand = memory.get("brand")
-    model = memory.get("model")
-    years = memory.get("years")
-    mileage = memory.get("mileage")
-    trim = memory.get("trim")
-    lang = memory.get("language", "uk")
-    vehicle = vehicle_label(memory)
-
-    if not changed.intersection({
+    # If the client has supplied/updated a qualification slot,
+    # always continue the deterministic local flow.
+    if changed.intersection({
         "brand", "model", "years", "drive", "mileage",
         "trim", "budget", "engine", "battery", "color"
     }):
-        return None
+        next_reply = next_qualification_reply(memory)
+        if next_reply:
+            return next_reply
 
-    if brand and not model:
-        return (
-            f"Яка саме модель {brand} Вас цікавить?"
-            if lang == "uk"
-            else f"Какая именно модель {brand} Вас интересует?"
-        )
-
-    if brand and model and not years:
-        return (
-            f"Добре, {brand} {model}. Який рік або діапазон років розглядаєте?"
-            if lang == "uk"
-            else f"Хорошо, {brand} {model}. Какой год или диапазон лет рассматриваете?"
-        )
-
-    if brand and model and years and not mileage:
-        return (
-            f"Добре, орієнтуємося на {vehicle}. По пробігу є побажання?"
-            if lang == "uk"
-            else f"Хорошо, ориентируемся на {vehicle}. По пробегу есть пожелания?"
-        )
-
-    if brand and model and years and mileage and not trim:
-        return (
-            f"Добре, {vehicle}, пробіг {mileage}. По комплектації є побажання?"
-            if lang == "uk"
-            else f"Хорошо, {vehicle}, пробег {mileage}. По комплектации есть пожелания?"
-        )
-
+    # Once the basic request is clear, offer selection once.
     if (
-        brand and model and years and mileage and trim
+        core_qualification_ready(memory)
         and not state.get("lead_sent")
         and not state.get("selection_offered")
         and not state.get("selection_declined")
     ):
         state["selection_offered"] = True
-        return soft_offer_text(lang)
+        return soft_offer_text(
+            memory.get("language", "uk")
+        )
+
+    # For a non-question phrase during qualification, do NOT send it to AI.
+    # Repeat only the next logical missing field.
+    if not should_consult_ai(user_text):
+        return next_qualification_reply(memory)
 
     return None
 
@@ -1060,7 +1098,11 @@ async def create_lead(
     state: dict,
 ):
     if state.get("lead_sent"):
-        return False
+        return {
+            "created": False,
+            "admin_sent": True,
+            "reason": "already_sent",
+        }
 
     first_name = normalize(sender.get("first_name"))
     last_name = normalize(sender.get("last_name"))
@@ -1071,6 +1113,7 @@ async def create_lead(
 
     summary = lead_summary(memory)
 
+    # Always save the lead to D1 first.
     await env.DB.prepare(
         """
         INSERT INTO leads (
@@ -1089,37 +1132,64 @@ async def create_lead(
         summary,
     ).run()
 
-    admin_chat_id = None
+    state["phone"] = phone
+    state["waiting_for_phone"] = False
+    state["selection_offered"] = False
+    state["selection_declined"] = False
+
     try:
-        admin_chat_id = int(str(env.ADMIN_CHAT_ID))
+        admin_chat_id = int(
+            normalize(str(env.ADMIN_CHAT_ID))
+        )
     except Exception:
         admin_chat_id = None
 
-    if admin_chat_id:
-        card = (
-            "🔥 НОВИЙ ЛІД\n\n"
-            f"Ім'я: {name}\n"
-            f"Username: {username}\n"
-            f"Telegram ID: {user_id}\n"
-            f"Телефон: {phone}\n\n"
-            f"{summary}"
-        )
+    if not admin_chat_id:
+        print("ADMIN LEAD ERROR: ADMIN_CHAT_ID is not configured")
+        state["lead_sent"] = False
+        state["admin_send_failed"] = True
+        return {
+            "created": True,
+            "admin_sent": False,
+            "reason": "admin_not_configured",
+        }
 
+    card = (
+        "🔥 НОВИЙ ЛІД\n\n"
+        f"Ім'я: {name}\n"
+        f"Username: {username}\n"
+        f"Telegram ID: {user_id}\n"
+        f"Телефон: {phone}\n\n"
+        f"{summary}"
+    )
+
+    try:
         await send_telegram(
             str(env.BOT_TOKEN),
             admin_chat_id,
             card,
         )
-    else:
-        print("ADMIN_CHAT_ID is not configured; lead saved only to D1")
+    except Exception as error:
+        print(
+            "ADMIN LEAD SEND ERROR:",
+            str(error),
+        )
+        state["lead_sent"] = False
+        state["admin_send_failed"] = True
+        return {
+            "created": True,
+            "admin_sent": False,
+            "reason": "telegram_send_failed",
+        }
 
     state["lead_sent"] = True
-    state["waiting_for_phone"] = False
-    state["selection_offered"] = False
-    state["selection_declined"] = False
-    state["phone"] = phone
+    state["admin_send_failed"] = False
 
-    return True
+    return {
+        "created": True,
+        "admin_sent": True,
+        "reason": "sent",
+    }
 
 
 class Default(WorkerEntrypoint):
@@ -1161,6 +1231,8 @@ class Default(WorkerEntrypoint):
                 "lead_flow": True,
                 "local_dialog_logic": True,
                 "local_qualification_v2": True,
+                "strict_local_flow": True,
+                "admin_lead_delivery": "configured" if admin_ok else "missing",
             })
 
         if path != "/telegram-webhook":
@@ -1214,6 +1286,14 @@ class Default(WorkerEntrypoint):
             user_id = int(user_id)
             bot_token = str(self.env.BOT_TOKEN)
 
+            if user_text == "/chatid":
+                await send_telegram(
+                    bot_token,
+                    chat_id,
+                    f"Chat ID:\n{chat_id}",
+                )
+                return
+
             if user_text in ("/start", "/newchat", "/reset", "🔄 Почати новий чат"):
                 await reset_state(
                     self.env.DB,
@@ -1223,9 +1303,14 @@ class Default(WorkerEntrypoint):
                 await send_telegram(
                     bot_token,
                     chat_id,
-                    "Вітаю! Я AI-консультант Auction Auto 👋\n"
-                    "Допоможу зорієнтуватися по автомобілях із США. "
-                    "Який автомобіль Вас цікавить?",
+                    (
+                        "Добре 👍 Починаємо новий діалог. "
+                        "Напишіть, яке авто Вас цікавить."
+                        if user_text == "🔄 Почати новий чат"
+                        else
+                        "Добрий день! 👋 Напишіть, яке авто Вас цікавить — "
+                        "допоможу зорієнтуватися."
+                    ),
                     reply_markup=main_keyboard(),
                 )
                 return
@@ -1264,7 +1349,7 @@ class Default(WorkerEntrypoint):
 
             phone = normalize(contact.get("phone_number"))
             if phone:
-                created = await create_lead(
+                lead_result = await create_lead(
                     self.env,
                     sender,
                     user_id,
@@ -1283,15 +1368,25 @@ class Default(WorkerEntrypoint):
                     state,
                 )
 
+                if lead_result.get("admin_sent"):
+                    lead_answer = (
+                        "Дякую 👍 Передам Ваш контакт менеджеру. "
+                        "Він перегляне актуальні варіанти та зв'яжеться з Вами."
+                        if lead_result.get("created")
+                        else
+                        "Ваш контакт уже передано менеджеру 👍 Можемо продовжити консультацію."
+                    )
+                else:
+                    lead_answer = (
+                        "Дякую 👍 Контакт збережено. "
+                        "Автоматична передача в групу менеджерів зараз не спрацювала — "
+                        "я залишив лід у системі для повторної відправки."
+                    )
+
                 await send_telegram(
                     bot_token,
                     chat_id,
-                    (
-                        "Дякую 👍 Передам Ваш контакт менеджеру. "
-                        "Він перегляне актуальні варіанти та зв'яжеться з Вами."
-                        if created
-                        else "Ваш контакт уже передано менеджеру 👍 Можемо продовжити консультацію."
-                    ),
+                    lead_answer,
                     reply_markup=main_keyboard(),
                 )
                 return
@@ -1363,7 +1458,7 @@ class Default(WorkerEntrypoint):
                 return
 
             if state.get("waiting_for_phone") and looks_like_phone(user_text):
-                created = await create_lead(
+                lead_result = await create_lead(
                     self.env,
                     sender,
                     user_id,
@@ -1382,15 +1477,24 @@ class Default(WorkerEntrypoint):
                     state,
                 )
 
+                if lead_result.get("admin_sent"):
+                    lead_answer = (
+                        "Дякую 👍 Передам Ваш контакт менеджеру."
+                        if lead_result.get("created")
+                        else
+                        "Ваш контакт уже передано менеджеру 👍 Можемо продовжити консультацію."
+                    )
+                else:
+                    lead_answer = (
+                        "Дякую 👍 Контакт збережено. "
+                        "Автоматична передача в групу менеджерів зараз не спрацювала — "
+                        "лід залишився збереженим у системі."
+                    )
+
                 await send_telegram(
                     bot_token,
                     chat_id,
-                    (
-                        "Дякую 👍 Передам Ваш контакт менеджеру. "
-                        "Він перегляне актуальні варіанти та зв'яжеться з Вами."
-                        if created
-                        else "Ваш контакт уже передано менеджеру 👍 Можемо продовжити консультацію."
-                    ),
+                    lead_answer,
                     reply_markup=main_keyboard(),
                 )
                 return
@@ -1496,6 +1600,35 @@ class Default(WorkerEntrypoint):
                 )
                 return
 
+            if (
+                is_simple_acknowledgement(user_text)
+                and core_qualification_ready(memory)
+                and not state.get("lead_sent")
+                and not state.get("selection_offered")
+                and not state.get("selection_declined")
+                and not state.get("waiting_for_phone")
+            ):
+                state["selection_offered"] = True
+
+                await save_state(
+                    self.env.DB,
+                    user_id,
+                    chat_id,
+                    history,
+                    memory,
+                    state,
+                )
+
+                await send_telegram(
+                    bot_token,
+                    chat_id,
+                    soft_offer_text(
+                        memory.get("language", "uk")
+                    ),
+                    reply_markup=main_keyboard(),
+                )
+                return
+
             memory, changed = update_memory(
                 memory,
                 user_text,
@@ -1527,6 +1660,31 @@ class Default(WorkerEntrypoint):
 
             if deterministic:
                 answer = deterministic
+
+            elif not should_consult_ai(user_text):
+                answer = (
+                    next_qualification_reply(memory)
+                    or (
+                        soft_offer_text(memory.get("language", "uk"))
+                        if core_qualification_ready(memory)
+                        and not state.get("lead_sent")
+                        and not state.get("selection_declined")
+                        else
+                        (
+                            "Добре. Можете уточнити, що саме Вас цікавить по цьому авто?"
+                            if memory.get("language", "uk") == "uk"
+                            else
+                            "Хорошо. Можете уточнить, что именно Вас интересует по этому авто?"
+                        )
+                    )
+                )
+
+                if (
+                    answer == soft_offer_text(memory.get("language", "uk"))
+                    and not state.get("selection_offered")
+                ):
+                    state["selection_offered"] = True
+
             else:
                 try:
                     answer = await ask_groq(
