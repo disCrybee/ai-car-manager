@@ -193,14 +193,19 @@ def clean_model_candidate(text: str, brand: str | None = None):
     clean = normalize(clean).strip(" ,.!?:;")
     low = clean.lower()
 
-    for prefix in (
-        "цікавить ", "интересует ", "хочу ", "шукаю ", "ищу ",
-        "автомобіль ", "автомобиль ", "машина ", "модель ",
-    ):
-        if low.startswith(prefix):
-            clean = clean[len(prefix):].strip()
-            low = clean.lower()
-            break
+    # Natural client phrases before the model.
+    clean = re.sub(
+        r"(?i)^(?:"
+        r"мене\s+цікавить|меня\s+интересует|"
+        r"цікавить|интересует|"
+        r"хочу|шукаю|ищу|"
+        r"автомобіль|автомобиль|машина|модель"
+        r")\s*[,;:\-]?\s*",
+        "",
+        clean,
+    ).strip()
+
+    low = clean.lower()
 
     if brand:
         for alias, canonical in sorted(
@@ -386,12 +391,34 @@ def is_negative(text: str) -> bool:
 def explicitly_wants_selection(text: str) -> bool:
     low = normalize(text).lower()
     phrases = (
-        "підбер", "подбер", "покажіть варіанти", "покажите варианты",
-        "актуальні варіанти", "актуальные варианты",
-        "хочу варіанти", "хочу варианты",
-        "хочу розрахунок", "хочу расчет",
-        "зв'яжіть з менеджером", "свяжите с менеджером",
-        "виклик менеджера", "вызов менеджера",
+        "подбери варианты",
+        "подберите варианты",
+        "покажи варианты",
+        "покажите варианты",
+        "хочу варианты",
+        "хочу подобрать",
+        "хочу підбір",
+        "підбери варіанти",
+        "підберіть варіанти",
+        "покажи варіанти",
+        "покажіть варіанти",
+        "актуальные лоты",
+        "актуальні лоти",
+        "актуальные варианты",
+        "актуальні варіанти",
+        "свяжите с менеджером",
+        "зв'яжіть з менеджером",
+        "связаться с менеджером",
+        "хочу заказать",
+        "хочу замовити",
+        "замовити авто",
+        "заказать авто",
+        "готов покупать",
+        "готов купувати",
+        "хочу розрахунок",
+        "хочу расчет",
+        "виклик менеджера",
+        "вызов менеджера",
     )
     return any(p in low for p in phrases)
 
@@ -548,9 +575,24 @@ def update_memory(memory: dict, text: str):
     memory.setdefault("asked_questions", [])
     memory.setdefault("last_question_topic", None)
 
-    # Local-version behaviour: short reply is interpreted
-    # according to the assistant's previous question.
+    # Snapshot slots BEFORE interpreting a short contextual reply.
+    # This is critical: if the bot asked for year and client writes "2015-2017",
+    # we must both SAVE the years and mark "years" as changed so the deterministic
+    # qualification flow advances to mileage instead of sending the reply to Groq.
+    tracked_slots = (
+        "brand", "model", "years", "budget", "mileage",
+        "trim", "engine", "drive", "battery", "color",
+    )
+    before_context = {
+        key: memory.get(key)
+        for key in tracked_slots
+    }
+
     store_contextual_answer(memory, text)
+
+    for key in tracked_slots:
+        if memory.get(key) != before_context.get(key):
+            changed.add(key)
 
     brand = detect_brand(text)
     if brand and brand != memory.get("brand"):
@@ -623,6 +665,11 @@ def qualification_reply(memory: dict, state: dict, changed: set, user_text: str)
     if looks_like_consultation_question(user_text):
         return None
 
+    # Bare answers to our own qualification questions must stay in Python flow.
+    # Examples: "2015-2017", "до 150 000 км", "максимальна".
+    if looks_like_year_only_reply(user_text):
+        pass
+
     brand = memory.get("brand")
     model = memory.get("model")
     years = memory.get("years")
@@ -632,7 +679,8 @@ def qualification_reply(memory: dict, state: dict, changed: set, user_text: str)
     vehicle = vehicle_label(memory)
 
     if not changed.intersection({
-        "brand", "model", "years", "drive", "mileage", "trim", "budget"
+        "brand", "model", "years", "drive", "mileage",
+        "trim", "budget", "engine", "battery", "color"
     }):
         return None
 
@@ -1112,6 +1160,7 @@ class Default(WorkerEntrypoint):
                 "async_webhook": True,
                 "lead_flow": True,
                 "local_dialog_logic": True,
+                "local_qualification_v2": True,
             })
 
         if path != "/telegram-webhook":
