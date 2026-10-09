@@ -53,8 +53,10 @@ QUESTION_MARKERS = (
 
 BRANDS = {
     "bmw": "BMW", "бмв": "BMW",
-    "mercedes-benz": "Mercedes-Benz", "mercedes": "Mercedes-Benz", "мерседес": "Mercedes-Benz",
-    "audi": "Audi", "ауди": "Audi",
+    "mercedes-benz": "Mercedes-Benz", "mercedes benz": "Mercedes-Benz",
+    "mercedes": "Mercedes-Benz", "мерседес": "Mercedes-Benz",
+    "мерседес-бенц": "Mercedes-Benz", "мерседес бенц": "Mercedes-Benz",
+    "audi": "Audi", "ауди": "Audi", "ауді": "Audi",
     "toyota": "Toyota", "тойота": "Toyota",
     "lexus": "Lexus", "лексус": "Lexus",
     "ford": "Ford", "форд": "Ford",
@@ -69,7 +71,7 @@ BRANDS = {
     "porsche": "Porsche", "порше": "Porsche",
     "volkswagen": "Volkswagen", "vw": "Volkswagen", "фольксваген": "Volkswagen",
     "mazda": "Mazda", "мазда": "Mazda",
-    "cadillac": "Cadillac", "кадиллак": "Cadillac",
+    "cadillac": "Cadillac", "кадиллак": "Cadillac", "каділак": "Cadillac",
     "jeep": "Jeep", "джип": "Jeep",
     "lincoln": "Lincoln", "лінкольн": "Lincoln", "линкольн": "Lincoln",
 }
@@ -419,6 +421,13 @@ def explicitly_wants_selection(text: str) -> bool:
         "готов купувати",
         "хочу розрахунок",
         "хочу расчет",
+        "пригін під ключ",
+        "пригон під ключ",
+        "пригон под ключ",
+        "авто під ключ",
+        "авто под ключ",
+        "під ключ",
+        "под ключ",
         "виклик менеджера",
         "вызов менеджера",
     )
@@ -523,10 +532,65 @@ def next_qualification_reply(memory: dict) -> str | None:
     return None
 
 
+def is_turnkey_price_question(text: str) -> bool:
+    low = normalize(text).lower()
+
+    money_words = (
+        "вартість", "ціна", "скільки", "стоимость", "цена",
+    )
+    turnkey_words = (
+        "під ключ", "под ключ", "в україні", "в украине",
+        "пригін", "пригон",
+    )
+
+    return (
+        any(x in low for x in money_words)
+        and any(x in low for x in turnkey_words)
+    )
+
+
+def turnkey_price_reply(memory: dict) -> str:
+    lang = memory.get("language", "uk")
+    vehicle = vehicle_label(memory) or (
+        "цього авто" if lang == "uk" else "этого авто"
+    )
+
+    missing = next_qualification_reply(memory)
+
+    if lang == "ru":
+        base = (
+            f"Точную стоимость {vehicle} под ключ можно посчитать только "
+            "после выбора конкретного лота: она зависит от цены покупки, "
+            "локации аукциона, доставки и растаможки."
+        )
+        if missing:
+            return base + " " + missing
+        return (
+            base
+            + " Если хотите, можем подобрать актуальные варианты под Ваши параметры."
+        )
+
+    base = (
+        f"Точну вартість {vehicle} під ключ можна порахувати лише "
+        "після вибору конкретного лота: вона залежить від ціни покупки, "
+        "локації аукціону, доставки та розмитнення."
+    )
+    if missing:
+        return base + " " + missing
+
+    return (
+        base
+        + " Якщо хочете, можемо підібрати актуальні варіанти під Ваші параметри."
+    )
+
+
 def should_consult_ai(text: str) -> bool:
-    # AI is only for a REAL question/consultation request.
-    # Bare answers like "2015-2017", "до 200000 км", "максимальна"
-    # must never trigger a technical lecture.
+    # Price/turnkey questions are handled deterministically by Python.
+    if is_turnkey_price_question(text):
+        return False
+
+    # AI is only for an actual automotive consultation request:
+    # trims, engine, transmission, battery, reliability, differences, etc.
     return looks_like_consultation_question(text)
 
 
@@ -1719,6 +1783,9 @@ class Default(WorkerEntrypoint):
                 "strict_local_flow": True,
                 "admin_lead_delivery": "configured" if admin_ok else "missing",
                 "verified_logistics": True,
+                "brand_aliases_v2": True,
+                "turnkey_flow": True,
+                "admincheck": True,
             })
 
         if path != "/telegram-webhook":
@@ -1778,6 +1845,42 @@ class Default(WorkerEntrypoint):
                     chat_id,
                     f"Chat ID:\n{chat_id}",
                 )
+                return
+
+            if user_text == "/admincheck":
+                try:
+                    admin_chat_id = int(
+                        normalize(str(self.env.ADMIN_CHAT_ID))
+                    )
+                except Exception:
+                    admin_chat_id = None
+
+                if not admin_chat_id:
+                    await send_telegram(
+                        bot_token,
+                        chat_id,
+                        "❌ ADMIN_CHAT_ID не налаштований у Cloudflare.",
+                    )
+                    return
+
+                try:
+                    await send_telegram(
+                        bot_token,
+                        admin_chat_id,
+                        "✅ Тест Auction Auto Bot: передача в адмін-групу працює.",
+                    )
+                    await send_telegram(
+                        bot_token,
+                        chat_id,
+                        f"✅ Тестове повідомлення відправлено в ADMIN_CHAT_ID {admin_chat_id}.",
+                    )
+                except Exception as error:
+                    await send_telegram(
+                        bot_token,
+                        chat_id,
+                        "❌ Не вдалося відправити повідомлення в адмін-групу. "
+                        f"Telegram error: {str(error)[:350]}",
+                    )
                 return
 
             if user_text in ("/start", "/newchat", "/reset", "🔄 Почати новий чат"):
@@ -2049,6 +2152,59 @@ class Default(WorkerEntrypoint):
                         if memory.get("language", "uk") == "uk"
                         else "Хорошо 👍 Тогда продолжим консультацию без подбора."
                     ),
+                    reply_markup=main_keyboard(),
+                )
+                return
+
+            if is_turnkey_price_question(user_text):
+                memory, changed = update_memory(
+                    memory,
+                    user_text,
+                )
+
+                answer = turnkey_price_reply(memory)
+
+                if (
+                    core_qualification_ready(memory)
+                    and not state.get("lead_sent")
+                    and not state.get("selection_declined")
+                ):
+                    state["selection_offered"] = True
+
+                history_with_user = [
+                    *history,
+                    {
+                        "role": "user",
+                        "content": user_text,
+                    },
+                ]
+
+                memory = remember_assistant_question(
+                    memory,
+                    answer,
+                )
+
+                final_history = [
+                    *history_with_user,
+                    {
+                        "role": "assistant",
+                        "content": answer,
+                    },
+                ]
+
+                await save_state(
+                    self.env.DB,
+                    user_id,
+                    chat_id,
+                    final_history,
+                    memory,
+                    state,
+                )
+
+                await send_telegram(
+                    bot_token,
+                    chat_id,
+                    answer,
                     reply_markup=main_keyboard(),
                 )
                 return
