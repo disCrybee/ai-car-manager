@@ -138,6 +138,26 @@ def detect_model(text: str, brand: str | None):
         if m:
             return m.group(1).upper()
 
+    if brand == "Mercedes-Benz":
+        # US auction naming: G63 / G 63 / G63 AMG / AMG G63,
+        # G550, G500, G65 etc. Works both when brand is in the
+        # same message and when the client sends only "G63" next.
+        m = re.search(
+            r"(?i)\b(?:AMG\s*)?G\s*-?\s*(63|65|55|550|500)(?:\s*AMG)?\b",
+            clean,
+        )
+        if m:
+            number = m.group(1)
+            return f"G{number}"
+
+        m = re.search(
+            r"(?i)\b(?:GLC|GLE|GLS|CLA|CLS|CLE|EQS|EQE|EQB|EQA|SL|S|E|C|A)\s*-?\s*(\d{2,3})\b",
+            clean,
+        )
+        if m:
+            full = m.group(0).upper().replace(" ", "").replace("-", "")
+            return full
+
     common = [
         "Corsair", "Navigator", "Aviator",
         "Camry", "RAV4", "Highlander",
@@ -156,7 +176,28 @@ def detect_model(text: str, brand: str | None):
 
 
 def detect_years(text: str):
-    return re.findall(r"\b(?:19[8-9]\d|20[0-3]\d)\b", text)
+    # Preserve intent such as "2015+" and "2018-2020".
+    plus = re.search(
+        r"\b((?:19[8-9]\d|20[0-3]\d))\s*\+",
+        text,
+    )
+    if plus:
+        return [f"{plus.group(1)}+"]
+
+    year_range = re.search(
+        r"\b((?:19[8-9]\d|20[0-3]\d))\s*[-–—]\s*((?:19[8-9]\d|20[0-3]\d))\b",
+        text,
+    )
+    if year_range:
+        return [
+            year_range.group(1),
+            year_range.group(2),
+        ]
+
+    return re.findall(
+        r"\b(?:19[8-9]\d|20[0-3]\d)\b",
+        text,
+    )
 
 
 def detect_drive(text: str):
