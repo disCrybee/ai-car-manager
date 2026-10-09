@@ -30,8 +30,14 @@ def detect_language(text: str, fallback: str = "uk") -> str:
     return fallback or "uk"
 
 
+def _choice_text(text: str) -> str:
+    value = normalize(text).lower()
+    value = re.sub(r"[^\w\s]+", " ", value, flags=re.UNICODE)
+    return normalize(value)
+
+
 def is_affirmative(text: str) -> bool:
-    low = normalize(text).lower().strip(" .,!🙂👍✅")
+    low = _choice_text(text)
     values = {
         "так", "да", "ага", "угу", "ок", "окей", "добре", "хорошо",
         "давайте", "давай", "так давайте", "да давайте", "хочу",
@@ -43,7 +49,7 @@ def is_affirmative(text: str) -> bool:
 
 
 def is_negative(text: str) -> bool:
-    low = normalize(text).lower().strip(" .,!🙂❌")
+    low = _choice_text(text)
     return low in {
         "ні", "нет", "не треба", "не нужно", "поки ні", "пока нет",
         "не цікаво", "не интересно", "ні дякую", "нет спасибо",
@@ -52,7 +58,7 @@ def is_negative(text: str) -> bool:
 
 
 def is_simple_ack(text: str) -> bool:
-    low = normalize(text).lower().strip(" .,!🙂👍")
+    low = _choice_text(text)
     return low in {
         "зрозуміло", "ясно", "ок", "окей", "добре", "гаразд",
         "дякую", "спасибі", "понял", "понятно", "хорошо", "спасибо",
