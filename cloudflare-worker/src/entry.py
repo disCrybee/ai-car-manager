@@ -43,6 +43,10 @@ SYSTEM_PROMPT = """
 
 Не вигадуй факт заради красивої відповіді. Якщо даних недостатньо — коротко скажи,
 що саме треба уточнити.
+
+КРИТИЧНО ДЛЯ ТЕХНІЧНИХ ПИТАНЬ:
+враховуй конкретну модель і рік з історії діалогу. Якщо клієнт уже сказав
+"BMW 540" і "2020 рік", не підмінюй це BMW 540 2023 або іншим модельним роком.
 """.strip()
 
 
@@ -63,7 +67,82 @@ TECHNICAL_KEYWORDS = (
 
 def needs_browser_search(text: str) -> bool:
     low = " ".join(text.lower().split())
-    return any(keyword in low for keyword in TECHNICAL_KEYWORDS)
+
+    has_technical_topic = any(
+        keyword in low
+        for keyword in TECHNICAL_KEYWORDS
+    )
+
+    # "2020 рік, повний привід" — це параметри клієнта,
+    # а не технічне питання. Browser Search тут не запускаємо.
+    question_markers = (
+        "?", "який", "яка", "яке", "які", "скільки",
+        "какой", "какая", "какое", "какие", "сколько",
+        "what", "which", "how ",
+    )
+
+    looks_like_question = any(
+        marker in low
+        for marker in question_markers
+    )
+
+    return has_technical_topic and looks_like_question
+
+
+def deterministic_parameter_reply(text: str):
+    low = " ".join(text.lower().split())
+
+    # Найтиповіша відповідь на уточнення після вибору моделі:
+    # "2020 рік, повний привід"
+    has_year = bool(
+        re.search(
+            r"\b(?:19[8-9]\d|20[0-3]\d)\b",
+            text,
+        )
+    )
+
+    has_drive = any(
+        item in low
+        for item in (
+            "повний привід",
+            "полный привод",
+            "awd",
+            "xdrive",
+            "4wd",
+            "задній привід",
+            "задний привод",
+            "rwd",
+            "передній привід",
+            "передний привод",
+            "fwd",
+        )
+    )
+
+    if has_year and has_drive and "?" not in text:
+        year = re.search(
+            r"\b(?:19[8-9]\d|20[0-3]\d)\b",
+            text,
+        ).group(0)
+
+        if any(
+            marker in low
+            for marker in (
+                "полный привод",
+                "задний привод",
+                "передний привод",
+            )
+        ):
+            return (
+                f"Хорошо, ориентируемся на {year} год "
+                "с указанным приводом. По пробегу есть пожелания?"
+            )
+
+        return (
+            f"Добре, орієнтуємося на {year} рік "
+            "із зазначеним приводом. По пробігу є побажання?"
+        )
+
+    return None
 
 
 def trim_history(history: list, max_messages: int = 12) -> list:
@@ -361,15 +440,61 @@ class Default(WorkerEntrypoint):
                 "Поки що найкраще напишіть запит текстом 🙂",
             )
 
+        history = await load_history(
+            self.env.DB,
+            int(user_id),
+        )
+
+        # Зберігаємо репліку клієнта ДО Groq.
+        # Якщо Groq дасть 429/500, рік/привід не загубляться.
+        history_with_user = [
+            *history,
+            {"role": "user", "content": user_text},
+        ]
+
+        await save_history(
+            self.env.DB,
+            int(user_id),
+            int(chat_id),
+            history_with_user,
+        )
+
+        deterministic = deterministic_parameter_reply(
+            user_text
+        )
+
+        if deterministic:
+            final_history = [
+                *history_with_user,
+                {
+                    "role": "assistant",
+                    "content": deterministic,
+                },
+            ]
+
+            await save_history(
+                self.env.DB,
+                int(user_id),
+                int(chat_id),
+                final_history,
+            )
+
+            return telegram_reply(
+                int(chat_id),
+                deterministic,
+            )
+
         try:
-            history = await load_history(self.env.DB, int(user_id))
             api_key = str(self.env.GROQ_API_KEY)
 
-            answer = await ask_groq(api_key, history, user_text)
+            answer = await ask_groq(
+                api_key,
+                history,
+                user_text,
+            )
 
-            new_history = [
-                *history,
-                {"role": "user", "content": user_text},
+            final_history = [
+                *history_with_user,
                 {"role": "assistant", "content": answer},
             ]
 
@@ -377,15 +502,19 @@ class Default(WorkerEntrypoint):
                 self.env.DB,
                 int(user_id),
                 int(chat_id),
-                new_history,
+                final_history,
             )
 
-            return telegram_reply(int(chat_id), answer)
+            return telegram_reply(
+                int(chat_id),
+                answer,
+            )
 
         except Exception as error:
             print("MESSAGE PROCESSING ERROR:", str(error))
+
             return telegram_reply(
                 int(chat_id),
-                "Зараз AI тимчасово не зміг обробити запит. "
-                "Спробуйте, будь ласка, ще раз трохи пізніше.",
+                "Зараз AI тимчасово недоступний, але Ваші параметри вже збережені. "
+                "Можете продовжувати діалог або повторити повідомлення трохи пізніше.",
             )
