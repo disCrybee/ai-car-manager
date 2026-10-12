@@ -14,6 +14,7 @@ from vehicle_logic import (
     new_memory,
     next_question,
     qualification_ready,
+    is_question,
 )
 
 
@@ -22,6 +23,16 @@ class DialogLogicTests(unittest.TestCase):
         memory, _ = extract_deterministic(new_memory(), "Ауді A4")
         self.assertEqual(memory["brand"], "Audi")
         self.assertEqual(memory["model"], "A4")
+        topic, _ = next_question(memory)
+        self.assertEqual(topic, "year")
+
+    def test_range_rover_is_not_a_question(self):
+        self.assertFalse(is_question("Range Rover Evoque"))
+        self.assertFalse(is_question("Range Rover Sport"))
+        self.assertTrue(is_question("Який запас ходу у Range Rover?"))
+        memory, _ = extract_deterministic(new_memory(), "Range Rover Evoque")
+        self.assertEqual(memory["brand"], "Range Rover")
+        self.assertEqual(memory["model"], "Evoque")
         topic, _ = next_question(memory)
         self.assertEqual(topic, "year")
 
