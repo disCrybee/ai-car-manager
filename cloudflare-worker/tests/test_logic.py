@@ -55,6 +55,23 @@ class DialogLogicTests(unittest.TestCase):
         self.assertIsNone(resolve_model("Toyota", "абракадабра"))
         self.assertIsNone(resolve_brand("добрий день"))
 
+    def test_cybertruck_purchase_and_latest_year_flow(self):
+        memory, _ = extract_deterministic(new_memory(), "Хочу купити Тесла Кібертрак")
+        self.assertEqual(memory["brand"], "Tesla")
+        self.assertEqual(memory["model"], "Cybertruck")
+        self.assertEqual(next_question(memory)[0], "year")
+        memory["last_question_topic"] = "year"
+        memory, _ = extract_deterministic(memory, "Останні роки випуску")
+        self.assertEqual(memory["year"], "останні роки випуску")
+        self.assertEqual(next_question(memory)[0], "mileage")
+        self.assertFalse(is_question("Останні роки випуску"))
+
+    def test_cybertruck_variations(self):
+        for raw in ("Тесла Кібертрак", "Tesla Cybertruck", "тесла сайбертрак", "Хочу купити Тесла Кібертрак"):
+            with self.subTest(raw=raw):
+                memory, _ = extract_deterministic(new_memory(), raw)
+                self.assertEqual(memory["model"], "Cybertruck")
+
     def test_vehicle_name_normalization(self):
         cases = (
             ("тойота секвоя", "Toyota", "Sequoia"),
