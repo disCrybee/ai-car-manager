@@ -555,7 +555,8 @@ def extract_deterministic(memory: dict, text: str):
             result["mileage_pending"] = clean
             result["mileage"] = None
 
-    trim = parse_trim(clean, expected=(expected == "trim"))
+    # Never treat subsequent free text as a trim while mileage clarification is active.
+    trim = parse_trim(clean, expected=(expected == "trim" and not result.get("mileage_pending")))
     if trim:
         result["trim"] = trim
 
@@ -642,7 +643,7 @@ def should_try_ai_extractor(memory: dict, text: str, changed: set) -> bool:
             or bool(detect_brand(clean))
         )
     expected = result.get("last_question_topic")
-    if result.get("mileage_pending"):
+    if result.get("mileage_pending") or expected == "mileage":
         return False
 
     if expected in REQUIRED_FIELDS and expected not in changed and not result.get(expected):
