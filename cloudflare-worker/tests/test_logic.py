@@ -8,6 +8,7 @@ if SRC not in sys.path:
     sys.path.insert(0, SRC)
 
 from utils import is_affirmative, is_negative
+from name_catalog import CATALOG, resolve_brand, resolve_model
 from vehicle_logic import (
     explicit_selection_intent,
     extract_deterministic,
@@ -25,6 +26,34 @@ class DialogLogicTests(unittest.TestCase):
         self.assertEqual(memory["model"], "A4")
         topic, _ = next_question(memory)
         self.assertEqual(topic, "year")
+
+    def test_global_catalog_and_fuzzy_names(self):
+        self.assertGreaterEqual(sum(len(models) for models in CATALOG.values()), 400)
+        cases = (
+            ("тойота секвоя", "Toyota", "Sequoia"),
+            ("тайота секвойя", "Toyota", "Sequoia"),
+            ("Toyota Camry", "Toyota", "Camry"),
+            ("Фольксваген Тігуан", "Volkswagen", "Tiguan"),
+            ("Хюндай Туксон", "Hyundai", "Tucson"),
+            ("Кіа Спортейдж", "Kia", "Sportage"),
+            ("Мерседес GLE", "Mercedes-Benz", "GLE"),
+            ("BMW X5", "BMW", "X5"),
+            ("Tesla Model Y", "Tesla", "Model Y"),
+            ("Nissan Rogue", "Nissan", "Rogue"),
+            ("Ford F-150", "Ford", "F-150"),
+            ("BYD Seal", "BYD", "Seal"),
+            ("Geely Monjaro", "Geely", "Monjaro"),
+            ("Skoda Octavia", "Skoda", "Octavia"),
+            ("Porsche Macan", "Porsche", "Macan"),
+        )
+        for value, brand, model in cases:
+            with self.subTest(value=value):
+                self.assertEqual(resolve_brand(value), brand)
+                self.assertEqual(resolve_model(brand, value), model)
+
+    def test_no_unrelated_car_guess(self):
+        self.assertIsNone(resolve_model("Toyota", "абракадабра"))
+        self.assertIsNone(resolve_brand("добрий день"))
 
     def test_vehicle_name_normalization(self):
         cases = (
