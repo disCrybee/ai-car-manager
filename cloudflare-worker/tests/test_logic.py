@@ -55,6 +55,27 @@ class DialogLogicTests(unittest.TestCase):
         self.assertIsNone(resolve_model("Toyota", "абракадабра"))
         self.assertIsNone(resolve_brand("добрий день"))
 
+    def test_f150_electric_preference_dialogue(self):
+        memory, _ = extract_deterministic(new_memory(), "Форд Ф150")
+        self.assertEqual(memory["brand"], "Ford")
+        self.assertEqual(memory["model"], "F-150")
+        self.assertEqual(next_question(memory)[0], "year")
+        memory["last_question_topic"] = "year"
+        memory, _ = extract_deterministic(memory, "2023-2024")
+        self.assertEqual(next_question(memory)[0], "mileage")
+        memory["last_question_topic"] = "mileage"
+        memory, _ = extract_deterministic(memory, "до 100")
+        self.assertIsNone(memory["mileage"])
+        self.assertEqual(next_question(memory)[0], "mileage")
+        memory, _ = extract_deterministic(memory, "100 тисяч км")
+        self.assertEqual(memory["mileage"], "до 100000 км")
+        self.assertEqual(next_question(memory)[0], "trim")
+        memory["last_question_topic"] = "trim"
+        self.assertFalse(is_question("Максимальна батарея, на 120 кВт"))
+        memory, _ = extract_deterministic(memory, "Максимальна батарея, на 120 кВт")
+        self.assertEqual(memory["trim"], "Максимальна батарея, на 120 кВт")
+        self.assertTrue(qualification_ready(memory))
+
     def test_cybertruck_purchase_and_latest_year_flow(self):
         memory, _ = extract_deterministic(new_memory(), "Хочу купити Тесла Кібертрак")
         self.assertEqual(memory["brand"], "Tesla")
