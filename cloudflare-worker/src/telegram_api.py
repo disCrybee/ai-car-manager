@@ -31,7 +31,17 @@ async def send_message(
             f"Telegram sendMessage HTTP {response.status}: {body[:500]}"
         )
 
-    return body
+    try:
+        result = json.loads(body)
+    except (ValueError, TypeError) as exc:
+        raise RuntimeError("Telegram returned invalid JSON") from exc
+
+    if not result.get("ok"):
+        raise RuntimeError(
+            f"Telegram sendMessage failed: {result.get('description', body[:350])}"
+        )
+
+    return result
 
 
 def main_keyboard():
