@@ -95,7 +95,7 @@ def resolve_model(brand, text):
     index = MODEL_INDEX.get(brand)
     if not index:
         return None
-    raw = re.sub(r"(?i)^(?:мене цікавить|меня интересует|хочу|шукаю|ищу|авто|машина)\\s+", "", str(text).strip())
+    raw = re.sub(r"(?i)^(?:мене цікавить|меня интересует|хочу|шукаю|ищу|авто|машина)\s+", "", str(text).strip())
     if key(raw) in ("", "неважливо", "любой"):
         return None
     # Model token from full name or a model-only follow-up, never arbitrary prose.
