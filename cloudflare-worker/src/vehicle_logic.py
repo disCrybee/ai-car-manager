@@ -34,6 +34,7 @@ def new_memory() -> dict:
         "model": None,
         "year": None,
         "mileage": None,
+        "mileage_pending": None,
         "trim": None,
         "budget": None,
         "engine": None,
@@ -182,33 +183,56 @@ def parse_year(text: str):
 def parse_mileage(text: str, expected: bool = False):
     clean = normalize(text)
     low = clean.lower()
-
     if expected and low in NO_PREFERENCE:
-        return "без обмежень" if "не " not in low or "разниц" not in low else "без обмежень"
-
-    if not expected and not any(
-        marker in low
-        for marker in ("км", "миль", "mile", "пробіг", "пробег")
-    ):
+        return "без обмежень"
+    if not expected and not any(x in low for x in ("км", "миль", "mile", "пробіг", "пробег")):
         return None
-
-    match = re.search(
-        r"(?i)(до\s*)?(\d{1,3}(?:[ .]\d{3})+|\d{3,6})\s*(тис\.?\s*)?(км|миль|miles?|mi)?",
+    match = re.fullmatch(
+        r"(?i)(до\\s*)?(\\d{1,3}(?:[ .]\\d{3})+|\\d{1,6})\\s*"
+        r"(тис\\.?|тисяч\\w*|тыс\\.?|k)?\\s*"
+        r"(км|кілометр\\w*|километр\\w*|миль|милі|миля|miles?|mi)?",
         clean,
     )
-    if not match:
-        return clean if expected and len(clean) <= 80 else None
-
-    number = match.group(2).replace(" ", "").replace(".", "")
+    if not match or not match.group(4):
+        return None
+    number = int(match.group(2).replace(" ", "").replace(".", ""))
     if match.group(3):
-        try:
-            number = str(int(number) * 1000)
-        except Exception:
-            pass
+        number *= 1000
+    raw_unit = match.group(4).lower()
+    unit = "миль" if raw_unit in ("миль", "милі", "миля", "mile", "miles", "mi") else "км"
+    return ("до " if match.group(1) else "") + str(number) + " " + unit
 
-    unit = match.group(4) or ("км" if "км" in low else "")
-    prefix = "до " if match.group(1) or low.startswith("до ") else ""
-    return normalize(f"{prefix}{number} {unit}")
+
+def mileage_clarification(text: str):
+    return bool(re.fullmatch(
+        r"(?i)(до\\s*)?\\d{1,6}\\s*(тис\\.?|тисяч\\w*|тыс\\.?|k)?",
+        normalize(text),
+    ))
+
+
+def resolve_pending_mileage(pending: str, reply: str):
+    low = normalize(reply).lower()
+    if low in NO_PREFERENCE:
+        return "без обмежень"
+    if mileage_clarification(low):
+        return None
+    m = re.search(r"\\d{1,6}", pending)
+    if not m:
+        return None
+    number = int(m.group())
+    thousand = bool(re.search(r"тис|тыс|k", pending))
+    if re.search(r"тис|тыс|тисяч|тысяч", low):
+        thousand = True
+    elif re.search(r"буквально|лише|всього|только", low):
+        thousand = False
+    elif not thousand:
+        return None
+    unit = "миль" if re.search(r"миль|милі|миля|miles?|\\bmi\\b", low) else (
+        "км" if re.search(r"км|кілометр|километр", low) else None
+    )
+    if not unit:
+        return None
+    return ("до " if pending.startswith("до ") else "") + str(number * (1000 if thousand else 1)) + " " + unit
 
 
 def parse_drive(text: str):
@@ -354,9 +378,17 @@ def extract_deterministic(memory: dict, text: str):
     elif expected == "year" and clean.lower() in NO_PREFERENCE:
         result["year"] = "без конкретного року"
 
-    mileage = parse_mileage(clean, expected=(expected == "mileage"))
-    if mileage:
-        result["mileage"] = mileage
+    if result.get("mileage_pending"):
+        mileage = resolve_pending_mileage(result["mileage_pending"], clean)
+        if mileage:
+            result["mileage"] = mileage
+            result["mileage_pending"] = None
+    else:
+        mileage = parse_mileage(clean, expected=(expected == "mileage"))
+        if mileage:
+            result["mileage"] = mileage
+        elif expected == "mileage" and mileage_clarification(clean):
+            result["mileage_pending"] = clean
 
     trim = parse_trim(clean, expected=(expected == "trim"))
     if trim:
@@ -443,6 +475,8 @@ def should_try_ai_extractor(memory: dict, text: str, changed: set) -> bool:
             or bool(detect_brand(clean))
         )
     expected = result.get("last_question_topic")
+    if result.get("mileage_pending"):
+        return False
 
     if expected in REQUIRED_FIELDS and expected not in changed and not result.get(expected):
         return True
@@ -498,6 +532,14 @@ def next_question(memory: dict):
             f"Добре, {data['brand']} {data['model']}. Який рік або діапазон років розглядаєте?"
             if lang == "uk"
             else f"Хорошо, {data['brand']} {data['model']}. Какой год или диапазон лет рассматриваете?",
+        )
+
+    if data.get("mileage_pending") and not data.get("mileage"):
+        return (
+            "mileage",
+            "Уточніть, будь ласка: це 100 км, 100 тисяч км чи 100 тисяч миль? Напишіть повний пробіг."
+            if lang == "uk"
+            else "Уточните, пожалуйста: это 100 км, 100 тысяч км или 100 тысяч миль? Напишите полный пробег.",
         )
 
     if not data.get("mileage"):
