@@ -556,6 +556,16 @@ class Default(WorkerEntrypoint):
                 )
                 changed |= ai_changed
 
+            # A missing mileage unit is an unresolved answer, not a consultation.
+            # Never advance to trim or send AI technical commentary until resolved.
+            if memory.get("mileage_pending") and not memory.get("mileage"):
+                topic, question = next_question(memory)
+                memory["last_question_topic"] = topic
+                await _persist_and_send(
+                    self.env, user_id, chat_id, history, memory, state, question,
+                )
+                return
+
             history = _append_history(
                 history,
                 "user",
