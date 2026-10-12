@@ -79,6 +79,11 @@ MODEL_ALIASES = {
         "Crosstrek": ("crosstrek", "крострек", "кросстрек", "крос трек"),
         "Outback": ("outback", "аутбек", "оутбек"),
     },
+    "Ford": {
+        "F-150": ("f150", "ф150", "ф 150", "форд ф150", "еф150", "еф 150", "форд ф 150", "f 150"),
+        "F-150 Lightning": ("f150 lightning", "f-150 lightning", "ф150 лайтнінг", "ф150 лайтнинг", "форд лайтнінг", "лайтнінг", "лайтнинг"),
+        "Edge": ("edge", "едж", "эдж"),
+    },
     "Tesla": {
         "Cybertruck": ("cybertruck", "кібертрак", "кибертрак", "сайбертрак", "сайбертрак", "кібертрук", "кибертрук", "cyber truck", "kibertrak", "kibertruck"),
         "Model 3": ("model 3", "модель 3", "модел 3"),
@@ -214,6 +219,11 @@ def is_question(text: str) -> bool:
     if any(low.startswith(prefix) for prefix in QUESTION_STARTS):
         return True
 
+    # Plain answers and requested vehicle configurations are not consultations.
+    if re.match(r"(?i)^(?:максимальн|топов|базов|повн|найбільш|самая|самый|найкращ|хочу\\s+)(?:\\w|\\s)*", low) and "?" not in low:
+        return False
+    if "?" not in low and any(x in low for x in ("максимальна батарея", "найбільша батарея", "батарея на", "акумулятор на")):
+        return False
     # Answers about preferred model years are not factual consultation questions.
     if is_relative_year_preference(clean):
         return False
@@ -446,6 +456,8 @@ def parse_trim(text: str, expected: bool = False):
     if expected:
         if low in NO_PREFERENCE:
             return "без конкретних побажань"
+        if any(x in low for x in ("максимальн", "максимум", "найбільш", "топов", "базов")) and not is_question(clean):
+            return clean[:100]
         if not is_question(clean) and len(clean) <= 100:
             return clean
         return None
