@@ -26,6 +26,25 @@ class DialogLogicTests(unittest.TestCase):
         topic, _ = next_question(memory)
         self.assertEqual(topic, "year")
 
+    def test_vehicle_name_normalization(self):
+        cases = (
+            ("тойота секвоя", "Toyota", "Sequoia"),
+            ("тойота секвойя", "Toyota", "Sequoia"),
+            ("тойота сиквоя", "Toyota", "Sequoia"),
+            ("toyta sequoya", "Toyota", "Sequoia"),
+            ("Toyota Sequoia", "Toyota", "Sequoia"),
+            ("рендж ровер евок", "Range Rover", "Evoque"),
+            ("форд едж", "Ford", "Edge"),
+            ("кіа спортейдж", "Kia", "Sportage"),
+            ("субару форестер", "Subaru", "Forester"),
+        )
+        for raw, brand, model in cases:
+            with self.subTest(raw=raw):
+                memory, _ = extract_deterministic(new_memory(), raw)
+                self.assertEqual(memory["brand"], brand)
+                self.assertEqual(memory["model"], model)
+                self.assertEqual(next_question(memory)[0], "year")
+
     def test_range_rover_is_not_a_question(self):
         self.assertFalse(is_question("Range Rover Evoque"))
         self.assertFalse(is_question("Range Rover Sport"))
