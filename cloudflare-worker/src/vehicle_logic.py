@@ -92,7 +92,13 @@ def is_question(text: str) -> bool:
     if any(low.startswith(prefix) for prefix in QUESTION_STARTS):
         return True
 
-    return any(word in low for word in CONSULT_WORDS)
+    # A bare vehicle name must never be treated as a technical question.
+    # In particular, 'Range Rover' contains 'range' (English for driving range).
+    # Require an actual question form for English short keywords such as range/trim.
+    if any(word in low for word in CONSULT_WORDS if word not in ("range", "trim")):
+        return True
+
+    return False
 
 
 def is_consultation_question(text: str) -> bool:
