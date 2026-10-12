@@ -36,6 +36,20 @@ class DialogLogicTests(unittest.TestCase):
         topic, _ = next_question(memory)
         self.assertEqual(topic, "year")
 
+    def test_ambiguous_mileage_requires_clarification(self):
+        memory = new_memory()
+        memory.update({"brand": "Toyota", "model": "Sequoia", "year": "2018", "last_question_topic": "mileage"})
+        memory, _ = extract_deterministic(memory, "до 100")
+        self.assertIsNone(memory["mileage"])
+        self.assertEqual(memory["mileage_pending"], "до 100")
+        topic, question = next_question(memory)
+        self.assertEqual(topic, "mileage")
+        self.assertIn("до 100", question)
+        memory, _ = extract_deterministic(memory, "100 тисяч км")
+        self.assertEqual(memory["mileage"], "до 100000 км")
+        self.assertIsNone(memory["mileage_pending"])
+        self.assertEqual(next_question(memory)[0], "trim")
+
     def test_mercedes_e_class(self):
         memory, _ = extract_deterministic(new_memory(), "Mercedes Benz E-class")
         self.assertEqual(memory["brand"], "Mercedes-Benz")
