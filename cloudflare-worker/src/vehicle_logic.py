@@ -80,6 +80,7 @@ MODEL_ALIASES = {
         "Outback": ("outback", "аутбек", "оутбек"),
     },
     "Tesla": {
+        "Cybertruck": ("cybertruck", "кібертрак", "кибертрак", "сайбертрак", "сайбертрак", "кібертрук", "кибертрук", "cyber truck", "kibertrak", "kibertruck"),
         "Model 3": ("model 3", "модель 3", "модел 3"),
         "Model Y": ("model y", "модель у", "модель y", "модел у"),
         "Model S": ("model s", "модель с", "модель s"),
@@ -139,6 +140,7 @@ def new_memory() -> dict:
         "brand": None,
         "model": None,
         "year": None,
+        "year_preference": None,
         "mileage": None,
         "mileage_pending": None,
         "trim": None,
@@ -169,6 +171,10 @@ def normalize_memory(memory: dict | None) -> dict:
             result["year"] = str(years)
 
     result.pop("years", None)
+    if result.get("brand") and result.get("model"):
+        resolved = canonical_model(result["brand"], str(result["model"]))
+        if resolved:
+            result["model"] = resolved
 
     if not isinstance(result.get("preferences"), list):
         result["preferences"] = []
@@ -207,6 +213,10 @@ def is_question(text: str) -> bool:
 
     if any(low.startswith(prefix) for prefix in QUESTION_STARTS):
         return True
+
+    # Answers about preferred model years are not factual consultation questions.
+    if is_relative_year_preference(clean):
+        return False
 
     # A bare vehicle name must never be treated as a technical question.
     # In particular, 'Range Rover' contains 'range' (English for driving range).
@@ -272,6 +282,19 @@ def _strip_intro(text: str) -> str:
         result,
     )
     return normalize(result)
+
+
+def is_relative_year_preference(text: str) -> bool:
+    low = normalize(text).lower()
+    if "?" in low:
+        return False
+    return bool(re.fullmatch(
+        r"(?:за\\s+)?(?:останні|последние|найновіші|найновіших|свіжі|свежие|"
+        r"новіші|нові|новые|найсвіжіші|самі\\s+нові|самые\\s+новые)"
+        r"(?:\\s+(?:роки|років|года|годы|рік|год))?"
+        r"(?:\\s+(?:випуску|выпуска|виробництва|производства))?",
+        low,
+    ))
 
 
 def parse_year(text: str):
@@ -487,13 +510,28 @@ def extract_deterministic(memory: dict, text: str):
         model = _clean_model_candidate(clean, result.get("brand"))
 
     if model:
-        result["model"] = canonical_model(result.get("brand"), model) or model
+        recognized = canonical_model(result.get("brand"), model)
+        if recognized:
+            result["model"] = recognized
+        elif result.get("brand"):
+            # Let the semantic extractor handle unknown names instead of
+            # saving 'купити Кібертрак' as a made-up model.
+            result["model"] = model if len(model.split()) <= 2 and not re.match(
+                r"(?i)^(купити|купить|придбати|приобрести|замовити|заказать)\\b", model
+            ) else result.get("model")
+    elif brand and not is_question(clean):
+        recognized = resolve_model(brand, clean)
+        if recognized:
+            result["model"] = recognized
 
     year = parse_year(clean)
     if year:
         result["year"] = year
     elif expected == "year" and clean.lower() in NO_PREFERENCE:
         result["year"] = "без конкретного року"
+    elif expected == "year" and is_relative_year_preference(clean):
+        result["year"] = "останні роки випуску"
+        result["year_preference"] = "latest"
 
     if result.get("mileage_pending"):
         mileage = resolve_pending_mileage(result["mileage_pending"], clean)
