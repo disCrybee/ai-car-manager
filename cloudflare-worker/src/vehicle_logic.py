@@ -85,7 +85,7 @@ MODEL_ALIASES = {
         "Cybertruck": ("cybertruck", "кібертрак", "кибертрак", "сайбертрак", "сайбертрак", "кібертрук", "кибертрук", "cyber truck", "kibertrak", "kibertruck"),
         "Model 3": ("model 3", "модель 3", "модел 3"),
         "Model Y": ("model y", "модель у", "модель y", "модел у"),
-        "Model S": ("model s", "модель с", "модель s"),
+        "Model S": ("model s", "модель с", "модель s", "модел с", "модел s", "модель ес", "model c"),
         "Model X": ("model x", "модель х", "модель x"),
     },
     "Chevrolet": {
@@ -543,7 +543,7 @@ def extract_deterministic(memory: dict, text: str):
         result["year_preference"] = "latest"
 
     if result.get("mileage_pending"):
-        mileage = resolve_pending_mileage(result["mileage_pending"], clean)
+        mileage = parse_mileage(clean, expected=True) or resolve_pending_mileage(result["mileage_pending"], clean)
         if mileage:
             result["mileage"] = mileage
             result["mileage_pending"] = None
@@ -553,6 +553,7 @@ def extract_deterministic(memory: dict, text: str):
             result["mileage"] = mileage
         elif expected == "mileage" and mileage_clarification(clean):
             result["mileage_pending"] = clean
+            result["mileage"] = None
 
     trim = parse_trim(clean, expected=(expected == "trim"))
     if trim:
@@ -663,7 +664,7 @@ def missing_required(memory: dict):
 
 
 def qualification_ready(memory: dict) -> bool:
-    return not missing_required(memory)
+    return not missing_required(memory) and not normalize_memory(memory).get("mileage_pending")
 
 
 def vehicle_label(memory: dict) -> str:
