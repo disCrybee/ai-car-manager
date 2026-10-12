@@ -2,6 +2,7 @@ import re
 from difflib import get_close_matches
 
 from config import BRAND_ALIASES, REQUIRED_FIELDS
+from name_catalog import resolve_brand, resolve_model
 from utils import detect_language, normalize
 
 
@@ -111,6 +112,9 @@ def _name_key(value: str) -> str:
 
 
 def canonical_model(brand: str, raw_model: str):
+    resolved = resolve_model(brand, raw_model) if brand else None
+    if resolved:
+        return resolved
     catalog = MODEL_ALIASES.get(brand, {})
     key = _name_key(raw_model)
     if not key:
@@ -175,6 +179,9 @@ def normalize_memory(memory: dict | None) -> dict:
 
 
 def detect_brand(text: str):
+    catalog_match = resolve_brand(text)
+    if catalog_match:
+        return catalog_match
     low = normalize(text).lower()
     aliases = {**BRAND_ALIASES, **EXTRA_BRAND_ALIASES}
     for alias in sorted(aliases, key=len, reverse=True):
