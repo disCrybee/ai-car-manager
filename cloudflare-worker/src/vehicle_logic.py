@@ -225,6 +225,8 @@ def resolve_pending_mileage(pending: str, reply: str):
         thousand = True
     elif re.search(r"буквально|лише|всього|только", low):
         thousand = False
+    elif not thousand and re.search(r"\\b100\\s*(?:км|миль|милі|mi)\\b", low):
+        thousand = False
     elif not thousand:
         return None
     unit = "миль" if re.search(r"миль|милі|миля|miles?|\\bmi\\b", low) else (
@@ -535,11 +537,12 @@ def next_question(memory: dict):
         )
 
     if data.get("mileage_pending") and not data.get("mileage"):
+        amount = data["mileage_pending"]
         return (
             "mileage",
-            "Уточніть, будь ласка: це 100 км, 100 тисяч км чи 100 тисяч миль? Напишіть повний пробіг."
+            ("Уточніть, будь ласка, що означає «" + amount + "»: кілометри, тисячі кілометрів чи тисячі миль?")
             if lang == "uk"
-            else "Уточните, пожалуйста: это 100 км, 100 тысяч км или 100 тысяч миль? Напишите полный пробег.",
+            else ("Уточните, пожалуйста, что означает «" + amount + "»: километры, тысячи километров или тысячи миль?"),
         )
 
     if not data.get("mileage"):
