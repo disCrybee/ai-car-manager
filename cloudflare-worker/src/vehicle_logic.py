@@ -1,4 +1,5 @@
 import re
+from difflib import get_close_matches
 
 from config import BRAND_ALIASES, REQUIRED_FIELDS
 from utils import detect_language, normalize
@@ -26,6 +27,107 @@ CONSULT_WORDS = (
     "різниц", "разниц", "відрізня", "отлича", "рестайл", "поколін",
     "поколен", "роки випуску", "годы выпуска", "який кузов", "какой кузов",
 )
+
+
+# Canonical catalog aliases. Expand with frequently observed client spellings.
+MODEL_ALIASES = {
+    "Toyota": {
+        "Sequoia": ("sequoia", "секвоя", "секвойя", "сиквоя", "сіквоя", "секвоія", "секвояа", "секвиа", "секвойа", "sekvoya", "seqouia", "secoia", "sequoya"),
+        "Camry": ("camry", "камрі", "камри", "кемрі", "кемри", "kamri", "camri"),
+        "RAV4": ("rav4", "rav 4", "рав4", "рав 4", "раф4", "раф 4"),
+        "Highlander": ("highlander", "хайлендер", "хайландер", "haighlander"),
+        "Corolla": ("corolla", "королла", "корола", "karolla"),
+        "Prius": ("prius", "пріус", "приус"),
+        "4Runner": ("4runner", "4 runner", "форранер", "форанер", "фор ранер"),
+        "Tacoma": ("tacoma", "такома"),
+        "Tundra": ("tundra", "тундра"),
+        "Land Cruiser": ("land cruiser", "ленд крузер", "ланд крузер", "крузак"),
+    },
+    "Range Rover": {
+        "Evoque": ("evoque", "евок", "евоук", "эвок", "евокью"),
+        "Sport": ("sport", "спорт"),
+        "Velar": ("velar", "велар"),
+    },
+    "Ford": {
+        "Edge": ("edge", "едж", "эдж", "едже"),
+        "Escape": ("escape", "ескейп", "эскейп", "ескап"),
+        "Explorer": ("explorer", "експлорер", "эксплорер"),
+        "Fusion": ("fusion", "фюжн", "фьюжн", "фужн"),
+        "Mustang": ("mustang", "мустанг", "мастанг"),
+    },
+    "Nissan": {
+        "Rogue": ("rogue", "роуг", "рог", "роґ"),
+        "Leaf": ("leaf", "ліф", "лиф"),
+        "Kicks": ("kicks", "кікс", "кикс"),
+        "Ariya": ("ariya", "арія", "ария"),
+    },
+    "Hyundai": {
+        "Tucson": ("tucson", "туссан", "тусан", "туксон", "туксoн"),
+        "Santa Fe": ("santa fe", "санта фе", "сантафе"),
+        "Kona": ("kona", "кона"),
+        "Ioniq 5": ("ioniq 5", "іонік 5", "ионик 5", "айонік 5"),
+    },
+    "Kia": {
+        "Sportage": ("sportage", "спортейдж", "спортаж", "спортадж"),
+        "Sorento": ("sorento", "соренто"),
+        "Niro": ("niro", "ніро", "ниро"),
+        "EV6": ("ev6", "ev 6", "іві6", "ев6"),
+    },
+    "Subaru": {
+        "Forester": ("forester", "форестер", "форєстер"),
+        "Crosstrek": ("crosstrek", "крострек", "кросстрек", "крос трек"),
+        "Outback": ("outback", "аутбек", "оутбек"),
+    },
+    "Tesla": {
+        "Model 3": ("model 3", "модель 3", "модел 3"),
+        "Model Y": ("model y", "модель у", "модель y", "модел у"),
+        "Model S": ("model s", "модель с", "модель s"),
+        "Model X": ("model x", "модель х", "модель x"),
+    },
+    "Chevrolet": {
+        "Bolt EV": ("bolt ev", "болт ев", "болт ev"),
+        "Equinox": ("equinox", "еквінокс", "эквинокс"),
+        "Tahoe": ("tahoe", "тахо", "таго"),
+    },
+    "BMW": {
+        "X3": ("x3", "х3", "ікс3", "икс3"),
+        "X5": ("x5", "х5", "ікс5", "икс5"),
+        "X6": ("x6", "х6", "ікс6", "икс6"),
+    },
+}
+
+EXTRA_BRAND_ALIASES = {
+    "тайота": "Toyota", "таёта": "Toyota", "тоёта": "Toyota",
+    "toyta": "Toyota", "toyotaa": "Toyota", "toiyota": "Toyota",
+    "субару": "Subaru", "субаруy": "Subaru",
+    "хюндай": "Hyundai", "хундай": "Hyundai",
+    "шеві": "Chevrolet", "шеви": "Chevrolet",
+    "ренж ровер": "Range Rover", "рейндж ровер": "Range Rover",
+    "рендж ровер": "Range Rover", "рейнджровер": "Range Rover",
+}
+
+def _name_key(value: str) -> str:
+    return re.sub(r"[^a-z0-9а-яіїєґё]+", "", normalize(value).casefold())
+
+
+def canonical_model(brand: str, raw_model: str):
+    catalog = MODEL_ALIASES.get(brand, {})
+    key = _name_key(raw_model)
+    if not key:
+        return None
+    aliases = {}
+    for model, variants in catalog.items():
+        for variant in (model, *variants):
+            aliases[_name_key(variant)] = model
+    if key in aliases:
+        return aliases[key]
+    # Correct isolated, near-exact misspellings only. Do not silently turn
+    # an unknown model into an unrelated model.
+    if len(key) >= 5:
+        matches = get_close_matches(key, list(aliases), n=2, cutoff=0.86)
+        if len(matches) == 1:
+            return aliases[matches[0]]
+    return None
 
 
 def new_memory() -> dict:
@@ -74,12 +176,18 @@ def normalize_memory(memory: dict | None) -> dict:
 
 def detect_brand(text: str):
     low = normalize(text).lower()
-
-    for alias in sorted(BRAND_ALIASES, key=len, reverse=True):
-        pattern = rf"(?<![\w]){re.escape(alias)}(?![\w])"
-        if re.search(pattern, low, flags=re.IGNORECASE):
-            return BRAND_ALIASES[alias]
-
+    aliases = {**BRAND_ALIASES, **EXTRA_BRAND_ALIASES}
+    for alias in sorted(aliases, key=len, reverse=True):
+        if re.search(rf"(?<![\\w]){re.escape(alias)}(?![\\w])", low, flags=re.IGNORECASE):
+            return aliases[alias]
+    # Typo correction only for a single plausible brand token.
+    for token in re.findall(r"[^\\W_]+", low, flags=re.UNICODE):
+        if len(token) < 5:
+            continue
+        candidates = [a for a in aliases if " " not in a and len(a) >= 5]
+        found = get_close_matches(token, candidates, n=2, cutoff=0.88)
+        if len(found) == 1:
+            return aliases[found[0]]
     return None
 
 
@@ -128,7 +236,7 @@ def _remove_brand_aliases(text: str, brand: str | None) -> str:
         return result
 
     for alias, canonical in sorted(
-        BRAND_ALIASES.items(),
+        {**BRAND_ALIASES, **EXTRA_BRAND_ALIASES}.items(),
         key=lambda item: len(item[0]),
         reverse=True,
     ):
@@ -372,7 +480,7 @@ def extract_deterministic(memory: dict, text: str):
         model = _clean_model_candidate(clean, result.get("brand"))
 
     if model:
-        result["model"] = model
+        result["model"] = canonical_model(result.get("brand"), model) or model
 
     year = parse_year(clean)
     if year:
@@ -455,6 +563,8 @@ def merge_ai_slots(memory: dict, slots: dict):
             continue
 
         if result.get(key) != value:
+            if key == "model":
+                value = canonical_model(result.get("brand"), value) or value
             result[key] = value
             changed.add(key)
 
