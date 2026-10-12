@@ -424,6 +424,21 @@ class Default(WorkerEntrypoint):
                 )
                 return
 
+            # Retry a previously saved lead without asking for the phone again.
+            # A Telegram API outage or missing group permissions must not lose the lead.
+            if state.get("lead_saved") and not state.get("lead_sent") and state.get("phone"):
+                await _handle_lead_contact(
+                    self.env,
+                    sender,
+                    user_id,
+                    chat_id,
+                    history,
+                    memory,
+                    state,
+                    state["phone"],
+                )
+                return
+
             # Manual phone number.
             if state.get("waiting_for_phone") and looks_like_phone(text):
                 await _handle_lead_contact(
