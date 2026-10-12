@@ -303,9 +303,9 @@ def parse_mileage(text: str, expected: bool = False):
     if not expected and not any(x in low for x in ("км", "миль", "mile", "пробіг", "пробег")):
         return None
     match = re.fullmatch(
-        r"(?i)(до\\s*)?(\\d{1,3}(?:[ .]\\d{3})+|\\d{1,6})\\s*"
-        r"(тис\\.?|тисяч\\w*|тыс\\.?|k)?\\s*"
-        r"(км|кілометр\\w*|километр\\w*|миль|милі|миля|miles?|mi)?",
+        r"(?i)(до\s*)?(\d{1,3}(?:[ .]\d{3})+|\d{1,6})\s*"
+        r"(тис\.?|тисяч\w*|тыс\.?|k)?\s*"
+        r"(км|кілометр\w*|километр\w*|миль|милі|миля|miles?|mi)?",
         clean,
     )
     if not match or not match.group(4):
@@ -320,7 +320,7 @@ def parse_mileage(text: str, expected: bool = False):
 
 def mileage_clarification(text: str):
     return bool(re.fullmatch(
-        r"(?i)(до\\s*)?\\d{1,6}\\s*(тис\\.?|тисяч\\w*|тыс\\.?|k)?",
+        r"(?i)(до\s*)?\d{1,6}\s*(тис\.?|тисяч\w*|тыс\.?|k)?",
         normalize(text),
     ))
 
@@ -331,7 +331,7 @@ def resolve_pending_mileage(pending: str, reply: str):
         return "без обмежень"
     if mileage_clarification(low):
         return None
-    m = re.search(r"\\d{1,6}", pending)
+    m = re.search(r"\d{1,6}", pending)
     if not m:
         return None
     number = int(m.group())
@@ -340,11 +340,11 @@ def resolve_pending_mileage(pending: str, reply: str):
         thousand = True
     elif re.search(r"буквально|лише|всього|только", low):
         thousand = False
-    elif not thousand and re.search(r"\\b100\\s*(?:км|миль|милі|mi)\\b", low):
+    elif not thousand and re.search(r"\b100\s*(?:км|миль|милі|mi)\b", low):
         thousand = False
     elif not thousand:
         return None
-    unit = "миль" if re.search(r"миль|милі|миля|miles?|\\bmi\\b", low) else (
+    unit = "миль" if re.search(r"миль|милі|миля|miles?|\bmi\b", low) else (
         "км" if re.search(r"км|кілометр|километр", low) else None
     )
     if not unit:
