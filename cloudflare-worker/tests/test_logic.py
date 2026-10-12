@@ -136,6 +136,23 @@ class DialogLogicTests(unittest.TestCase):
         self.assertIsNone(memory["mileage_pending"])
         self.assertEqual(next_question(memory)[0], "trim")
 
+    def test_tesla_model_s_and_mileage_block(self):
+        memory, _ = extract_deterministic(new_memory(), "Тесла")
+        memory["last_question_topic"] = "model"
+        memory, _ = extract_deterministic(memory, "Модель С")
+        self.assertEqual(memory["model"], "Model S")
+        memory["last_question_topic"] = "year"
+        memory, _ = extract_deterministic(memory, "2020")
+        memory["last_question_topic"] = "mileage"
+        memory, _ = extract_deterministic(memory, "До 100")
+        self.assertIsNone(memory["mileage"])
+        self.assertIsNotNone(memory["mileage_pending"])
+        self.assertFalse(qualification_ready(memory))
+        self.assertEqual(next_question(memory)[0], "mileage")
+        memory, _ = extract_deterministic(memory, "100 тисяч км")
+        self.assertEqual(memory["mileage"], "до 100000 км")
+        self.assertEqual(next_question(memory)[0], "trim")
+
     def test_mercedes_e_class(self):
         memory, _ = extract_deterministic(new_memory(), "Mercedes Benz E-class")
         self.assertEqual(memory["brand"], "Mercedes-Benz")
