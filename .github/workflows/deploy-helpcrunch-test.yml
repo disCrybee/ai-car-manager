@@ -1,0 +1,48 @@
+name: Deploy HelpCrunch Test Worker
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-test:
+    if: github.ref == 'refs/heads/feature/helpcrunch-integration'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cloudflare-worker
+    steps:
+      - name: Checkout selected branch
+        uses: actions/checkout@v6
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+      - name: Run HelpCrunch tests
+        run: uv run python -m unittest discover -s tests -p "test_helpcrunch*.py" -v
+      - name: Verify isolated deployment target
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          source = json.loads(Path("wrangler.helpcrunch-test.jsonc").read_text())
+          assert source["name"] == "auction-auto-helpcrunch-test"
+          assert source["main"] == "src/helpcrunch_test_entry.py"
+          assert not source.get("d1_databases"), "Staging must not use Telegram D1"
+          Path("wrangler.jsonc").write_text(json.dumps(source, indent=2))
+          print("Selected test Worker: auction-auto-helpcrunch-test")
+          PY
+      - name: Check syntax
+        run: uv run python -m py_compile src/helpcrunch*.py
+      - name: Deploy isolated Python Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN" && test -n "$CLOUDFLARE_ACCOUNT_ID"
+          uvx --from workers-py pywrangler deploy
