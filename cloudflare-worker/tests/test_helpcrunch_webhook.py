@@ -45,7 +45,9 @@ class HelpCrunchWebhookTests(unittest.TestCase):
         self.assertFalse(describe_event(example_event(app=78), 77, night)["would_process"])
         self.assertFalse(describe_event(example_event(event="message.chat.agent"), 77, night)["would_process"])
         self.assertFalse(describe_event(example_event(text=""), 77, night)["would_process"])
-        self.assertFalse(describe_event(example_event(), None, night)["would_process"])
+        self.assertTrue(describe_event(example_event(), None, night)["would_process"])
+        self.assertTrue(describe_event(example_event(app=78), None, night)["would_process"])
+        self.assertFalse(describe_event(example_event(app=None), None, night)["would_process"])
 
     def test_no_customer_text_in_metadata(self):
         result = describe_event(example_event(text="Sensitive customer message"), 77,
