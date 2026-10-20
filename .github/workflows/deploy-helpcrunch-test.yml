@@ -1,6 +1,12 @@
 name: Deploy HelpCrunch Test Worker
 
 on:
+  push:
+    branches:
+      - feature/helpcrunch-integration
+    paths:
+      - ".github/workflows/deploy-helpcrunch-test.yml"
+      - "cloudflare-worker/**"
   workflow_dispatch:
 
 permissions:
