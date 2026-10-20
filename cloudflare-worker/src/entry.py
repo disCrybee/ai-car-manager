@@ -210,14 +210,14 @@ class Default(WorkerEntrypoint):
             # Receive-only: no outgoing HelpCrunch API calls and no AI messages.
             signing_key = str(getattr(self.env, "HELPCRUNCH_WEBHOOK_SIGNING_KEY", "") or "")
             application_id = getattr(self.env, "HELPCRUNCH_APPLICATION_ID", None)
-            if not signing_key or not application_id:
+            if not signing_key:
                 return Response("Not Configured", status=503)
             try:
                 raw_body = (await request.text()).encode("utf-8")
                 signature = request.headers.get("X-HelpCrunch-Signature", "")
                 if not verify_signature(raw_body, signing_key, signature):
                     return Response("Unauthorized", status=401)
-                result = describe_event(raw_body, application_id=int(application_id))
+                result = describe_event(raw_body, application_id=int(application_id) if application_id else None)
             except (ValueError, TypeError):
                 return Response("Bad Request", status=400)
             # Intentionally no customer text, names, phone numbers or email in logs.
