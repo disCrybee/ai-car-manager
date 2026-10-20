@@ -43,7 +43,7 @@ def describe_event(raw_body: bytes, application_id: int | None = None, now=None)
         app_id = int(app_id) if app_id is not None else None
     except (TypeError, ValueError):
         app_id = None
-    allowed = application_id is not None and app_id == int(application_id)
+    allowed = app_id is not None and (application_id is None or app_id == int(application_id))
     return {
         "event": payload.get("event"),
         "chat_id": data.get("chat_id"),
