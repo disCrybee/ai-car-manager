@@ -11,7 +11,7 @@ class QualificationFlowTests(unittest.TestCase):
         result = next_clarification("Мій бюджет 700.000")
         self.assertEqual(result["pending_field"], "budget")
         self.assertIn("валют", result["question"].lower())
-        self.assertEqual(next_clarification("у гривнях", "budget")["pending_field"], "budget")
+        self.assertIsNone(next_clarification("у гривнях", "budget")["pending_field"])
         self.assertIsNone(next_clarification("грн", "budget")["pending_field"])
 
     def test_mileage_requires_units_and_scale(self):
