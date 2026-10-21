@@ -33,7 +33,7 @@ def qualification_question(text: str, *, field: str):
         last = matches[-1]
         if _quantity(last.group(1)) is None:
             return None
-        if last.group(2) or re.search(r"(?<!\\w)(?:[$€₴]|usd|uah|eur|грн|долар(?:ів|и)?|євро)\\s*\\d", value, re.I):
+        if last.group(2) or re.search(r"(?<!\w)(?:[$€₴]|usd|uah|eur|грн|долар(?:ів|и)?|євро)\s*\d", value, re.I):
             return None
         return "Підкажіть, будь ласка, бюджет Ви вказали в гривнях, доларах США чи євро?"
     if field == "mileage":
@@ -43,7 +43,7 @@ def qualification_question(text: str, *, field: str):
             return None
         if not re.search(r"\d", value):
             return None
-        if re.search(r"тисяч|тис\\.?|thousand|\\bk\\b", value, re.I):
+        if re.search(r"тисяч|тис\.?|thousand|\bk\b", value, re.I):
             return "Уточніть, будь ласка, пробіг указаний у кілометрах чи милях?"
         return (
             "Уточніть, будь ласка, пробіг: Ви маєте на увазі "
