@@ -3,7 +3,6 @@
 All write operations require explicit opt-in and exact test chat/agent IDs.
 """
 import json
-from workers import fetch
 
 API_BASE = "https://api.helpcrunch.com/v1"
 
@@ -16,6 +15,7 @@ async def _request(api_key: str, method: str, path: str, payload=None):
     if payload is not None:
         headers["Content-Type"] = "application/json"
         options["body"] = json.dumps(payload, ensure_ascii=False)
+    from workers import fetch
     response = await fetch(API_BASE + path, **options)
     body = await response.text()
     if response.status < 200 or response.status >= 300:
