@@ -27,6 +27,22 @@ class DialogStateTests(unittest.TestCase):
         self.assertIsNone(question)
         self.assertIn("mileage", state["verified"])
 
+    def test_mileage_units_in_separate_replies(self):
+        state, _ = advance(initial_state(), "Пробіг до 100")
+        state, question = advance(state, "тисяч")
+        self.assertEqual(state["pending_field"], "mileage")
+        self.assertIsNotNone(question)
+        state, question = advance(state, "км")
+        self.assertIsNone(question)
+        self.assertIn("тисяч", state["verified"]["mileage"])
+        self.assertIn("км", state["verified"]["mileage"])
+
+    def test_budget_currency_confirmation_without_prior_amount_is_not_guessed(self):
+        state, _ = advance(initial_state(), "Бюджет 700.000")
+        state, question = advance(state, "грн")
+        self.assertIsNone(question)
+        self.assertIn("700.000", state["verified"]["budget"])
+
     def test_no_cross_chat_state(self):
         first, _ = advance(initial_state(), "Бюджет 700.000")
         second = initial_state()
