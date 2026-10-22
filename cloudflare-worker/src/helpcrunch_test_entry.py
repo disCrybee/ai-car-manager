@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 from helpcrunch_webhook import describe_event, verify_signature
 from helpcrunch_brands import configured_brands, brand_for_application
 from helpcrunch_planner import plan_incoming
+from helpcrunch_preview_pipeline import process_preview
 
 
 class Default(WorkerEntrypoint):
@@ -24,12 +25,15 @@ class Default(WorkerEntrypoint):
         try:
             plan = plan_incoming(raw)
             metadata = plan["metadata"]
-            metadata["clarification_needed"] = bool(plan["suggested_reply"])
+            db = getattr(self.env, "HC_DB", None)
+            preview = await process_preview(raw, metadata, db)
+            metadata["preview_status"] = preview["status"]
+            metadata["clarification_needed"] = bool(preview.get("clarification_needed"))
             mapping = configured_brands(str(getattr(self.env, "HELPCRUNCH_BRANDS_JSON", "") or ""))
             metadata["brand"] = brand_for_application(metadata["application_id"], mapping)
         except (TypeError, ValueError):
             return Response("Bad Request", status=400)
         # Dry-run planning only: no message text in logs or responses.
-        # No outbound message, no AI call, no D1 write.
+        # No outbound message or AI call. D1 writes only if HC_DB is configured.
         print("HELPCRUNCH EVENT", metadata)
         return Response.json({"ok": True, "mode": "receive-only"})
