@@ -11,7 +11,20 @@ class Default(WorkerEntrypoint):
     async def fetch(self, request):
         path = urlparse(request.url).path
         if path == "/health":
-            return Response.json({"ok": True, "service": "helpcrunch-test", "mode": "receive-only", "memory_configured": getattr(self.env, "HC_DB", None) is not None, "outbound_enabled": False})
+            db = getattr(self.env, "HC_DB", None)
+            readable = False
+            if db is not None:
+                try:
+                    await db.prepare("SELECT COUNT(*) AS n FROM hc_dialog_state").first()
+                    await db.prepare("SELECT COUNT(*) AS n FROM hc_processed_events").first()
+                    readable = True
+                except Exception:
+                    print("HelpCrunch staging D1 health check failed")
+            return Response.json({
+                "ok": True, "service": "helpcrunch-test", "mode": "receive-only",
+                "memory_configured": db is not None,
+                "memory_readable": readable, "outbound_enabled": False
+            })
         if path != "/helpcrunch-webhook":
             return Response("Not Found", status=404)
         if request.method != "POST":
