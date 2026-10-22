@@ -1,0 +1,62 @@
+name: Deploy HelpCrunch Test Worker
+
+on:
+  push:
+    branches:
+      - feature/helpcrunch-integration
+    paths:
+      - ".github/workflows/deploy-helpcrunch-test.yml"
+      - "cloudflare-worker/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-test:
+    if: github.ref == 'refs/heads/feature/helpcrunch-integration'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cloudflare-worker
+    steps:
+      - name: Checkout selected branch
+        uses: actions/checkout@v6
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+      - name: Run HelpCrunch tests
+        run: uv run python -m unittest discover -s tests -p "test_helpcrunch*.py" -v
+      - name: Validate HelpCrunch D1 migration readiness
+        run: uv run python check_helpcrunch_staging.py
+      - name: Verify isolated deployment target
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          source = json.loads(Path("wrangler.helpcrunch-test.jsonc").read_text())
+          assert source["name"] == "auction-auto-helpcrunch-test"
+          assert source["main"] == "src/helpcrunch_test_entry.py"
+          databases = source.get("d1_databases", [])
+          assert len(databases) == 1, "Expected exactly one HelpCrunch D1"
+          db = databases[0]
+          assert db["binding"] == "HC_DB"
+          assert db["database_name"] == "helpcrunch-test-memory"
+          assert db["database_id"] == "d726c736-2efa-4944-a98f-f6efe26a5c00"
+          assert db["migrations_dir"] == "migrations/helpcrunch"
+          Path("wrangler.jsonc").write_text(json.dumps(source, indent=2))
+          print("Selected test Worker: auction-auto-helpcrunch-test")
+          PY
+      - name: Check syntax
+        run: uv run python -m py_compile src/helpcrunch*.py
+      - name: Deploy isolated Python Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN" && test -n "$CLOUDFLARE_ACCOUNT_ID"
+          uvx --from workers-py pywrangler deploy

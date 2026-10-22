@@ -1,0 +1,20 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "auction-auto-helpcrunch-test",
+  "main": "src/helpcrunch_test_entry.py",
+  "compatibility_date": "2026-10-09",
+  "compatibility_flags": [
+    "python_workers"
+  ],
+  "observability": {
+    "enabled": true
+  },
+  "d1_databases": [
+    {
+      "binding": "HC_DB",
+      "database_name": "helpcrunch-test-memory",
+      "database_id": "d726c736-2efa-4944-a98f-f6efe26a5c00",
+      "migrations_dir": "migrations/helpcrunch"
+    }
+  ]
+}
