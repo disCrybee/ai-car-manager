@@ -4,7 +4,7 @@ Never infer currency or mileage unit for unspecified numbers.
 """
 import re
 
-MONEY = re.compile(r"(?<!\w)(\d[\d\s.,]*)(?:\s*(грн|₴|uah|usd|долар(?:ів|и)?|дол|\$|євро|eur|€))?(?!\w)", re.I)
+MONEY = re.compile(r"(?<!\w)(\d[\d\s.,]*)(?:\s*(грн|₴|uah|usd|долар(?:ів|и|ах)?|дол|\$|євро|eur|€))?(?!\w)", re.I)
 MILEAGE_CONTEXT = re.compile(r"пробіг|пробег|кілометраж|mileage", re.I)
 BUDGET_CONTEXT = re.compile(r"бюджет|вартіст|ціна|цікавить за|до\s*[\d., ]+\s*(?:грн|₴|\$|usd|uah)", re.I)
 
@@ -33,7 +33,7 @@ def qualification_question(text: str, *, field: str):
         last = matches[-1]
         if _quantity(last.group(1)) is None and not re.search(r"\d+\s*(?:тисяч|тис\.?)", value, re.I):
             return None
-        if last.group(2) or re.search(r"(?<!\w)(?:[$€₴]|usd|uah|eur|грн|долар(?:ів|и)?|євро)\s*\d", value, re.I):
+        if last.group(2) or re.search(r"(?<!\w)(?:[$€₴]|usd|uah|eur|грн|долар(?:ів|и|ах)?|євро)\s*\d", value, re.I):
             return None
         return "Підкажіть, будь ласка, бюджет Ви вказали в гривнях, доларах США чи євро?"
     if field == "mileage":
