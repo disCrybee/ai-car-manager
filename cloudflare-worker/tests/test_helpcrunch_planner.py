@@ -24,7 +24,7 @@ class PlannerTests(unittest.TestCase):
     def test_night_budget_clarification_dry_run(self):
         result = plan_incoming(event("Бюджет 700.000"), now=NIGHT)
         self.assertTrue(result["accepted"])
-        self.assertIn("валют", result["suggested_reply"].lower())
+        self.assertIn("гривнях", result["suggested_reply"].lower())
         self.assertEqual(result["state"]["pending_field"], "budget")
 
     def test_followup_uses_existing_state(self):
