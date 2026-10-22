@@ -1,6 +1,6 @@
 """Optional D1-backed preview. Does not send messages to customers."""
 from helpcrunch_planner import plan_incoming
-from helpcrunch_store import load_dialog, save_dialog, claim_event
+from helpcrunch_store import load_dialog, commit_dialog_event
 
 
 async def process_preview(raw, metadata, db=None):
@@ -16,9 +16,7 @@ async def process_preview(raw, metadata, db=None):
         return {"status": "ignored"}
     existing = await load_dialog(db, chat, app)
     plan = plan_incoming(raw, state=existing)
-    # Preview requires idempotence before changing state.
-    claimed = await claim_event(db, f"{app}:{chat}:{message}", chat, app)
-    if not claimed:
+    committed = await commit_dialog_event(db, f"{app}:{chat}:{message}", chat, app, plan["state"])
+    if not committed:
         return {"status": "duplicate"}
-    await save_dialog(db, chat, app, plan["state"])
     return {"status": "stored", "clarification_needed": bool(plan["suggested_reply"])}
