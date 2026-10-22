@@ -30,6 +30,8 @@ jobs:
         uses: astral-sh/setup-uv@v6
       - name: Run HelpCrunch tests
         run: uv run python -m unittest discover -s tests -p "test_helpcrunch*.py" -v
+      - name: Validate HelpCrunch D1 migration readiness
+        run: uv run python check_helpcrunch_staging.py
       - name: Verify isolated deployment target
         shell: bash
         run: |
