@@ -11,7 +11,7 @@ class Default(WorkerEntrypoint):
     async def fetch(self, request):
         path = urlparse(request.url).path
         if path == "/health":
-            return Response.json({"ok": True, "service": "helpcrunch-test", "mode": "receive-only"})
+            return Response.json({"ok": True, "service": "helpcrunch-test", "mode": "receive-only", "memory_configured": getattr(self.env, "HC_DB", None) is not None, "outbound_enabled": False})
         if path != "/helpcrunch-webhook":
             return Response("Not Found", status=404)
         if request.method != "POST":
