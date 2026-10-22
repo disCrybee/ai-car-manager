@@ -31,7 +31,7 @@ def qualification_question(text: str, *, field: str):
         if not matches:
             return None
         last = matches[-1]
-        if _quantity(last.group(1)) is None:
+        if _quantity(last.group(1)) is None and not re.search(r"\d+\s*(?:тисяч|тис\\.?)", value, re.I):
             return None
         if last.group(2) or re.search(r"(?<!\w)(?:[$€₴]|usd|uah|eur|грн|долар(?:ів|и)?|євро)\s*\d", value, re.I):
             return None
