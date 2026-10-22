@@ -21,7 +21,7 @@ def sample(text="Бюджет 700.000", message_id=101):
 class TestPreview(unittest.IsolatedAsyncioTestCase):
     async def test_no_database_preview_has_no_side_effect(self):
         raw, meta = sample()
-        result = await process_preview(raw, meta)
+        result = await process_preview(raw, meta, now=datetime(2026, 10, 23, 1, tzinfo=ZoneInfo('Europe/Kyiv')))
         self.assertEqual(result["status"], "preview")
         self.assertTrue(result["clarification_needed"])
 
