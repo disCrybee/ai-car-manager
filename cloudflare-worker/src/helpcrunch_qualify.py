@@ -33,13 +33,16 @@ def qualification_question(text: str, *, field: str):
         last = matches[-1]
         if _quantity(last.group(1)) is None and not re.search(r"\d+\s*(?:тисяч|тис\.?)", value, re.I):
             return None
-        if last.group(2) or re.search(r"(?<!\w)(?:[$€₴]|usd|uah|eur|грн|долар(?:ів|и|ах)?|євро)\s*\d", value, re.I):
+        if last.group(2) or re.search(r"(?:тисяч|тис\\.?)\\s*(?:грн|₴|uah|usd|долар(?:ів|и|ах)?|дол|\\$|євро|eur|€)\\b", value, re.I) or re.search(r"(?<!\w)(?:[$€₴]|usd|uah|eur|грн|долар(?:ів|и|ах)?|євро)\s*\d", value, re.I):
             return None
         return "Підкажіть, будь ласка, бюджет Ви вказали в гривнях, доларах США чи євро?"
     if field == "mileage":
         if not MILEAGE_CONTEXT.search(value) and not re.fullmatch(r"[\d\s.,]+", value):
             return None
         if re.search(r"(?<!\w)(км|km|миль|милі|miles?|mi)(?!\w)", value, re.I):
+            # A bare "100 км" can mean 100 or shorthand for 100 thousand.
+            if re.search(r"\b\d{1,3}\s*(?:км|km|миль|милі|miles?|mi)\b", value, re.I) and not re.search(r"тисяч|тис\.?|thousand", value, re.I):
+                return "Уточніть, будь ласка, Ви маєте на увазі 100 чи 100 тисяч?"
             return None
         if not re.search(r"\d", value):
             return None
