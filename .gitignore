@@ -21,3 +21,5 @@ data/dialog_memory.json
 .idea/
 Thumbs.db
 .DS_Store
+# Generated local-only HelpCrunch D1 configuration
+cloudflare-worker/wrangler.helpcrunch-d1.generated.json
