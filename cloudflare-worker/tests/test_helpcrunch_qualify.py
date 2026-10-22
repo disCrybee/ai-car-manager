@@ -10,6 +10,7 @@ class QualifyTests(unittest.TestCase):
     def test_ambiguous_budget(self):
         self.assertIn("гривнях", qualification_question("Бюджет 700.000", field="budget"))
         self.assertIn("доларах", qualification_question("Бюджет 30 тисяч", field="budget") or "")
+        self.assertIsNone(qualification_question("Бюджет 30 тисяч грн", field="budget"))
 
     def test_explicit_budget(self):
         self.assertIsNone(qualification_question("Бюджет 700000 грн", field="budget"))
