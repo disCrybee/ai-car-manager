@@ -41,12 +41,25 @@ jobs:
           source = json.loads(Path("wrangler.helpcrunch-test.jsonc").read_text())
           assert source["name"] == "auction-auto-helpcrunch-test"
           assert source["main"] == "src/helpcrunch_test_entry.py"
-          assert not source.get("d1_databases"), "Staging must not use Telegram D1"
+          databases = source.get("d1_databases", [])
+          assert len(databases) == 1, "Expected exactly one HelpCrunch D1"
+          db = databases[0]
+          assert db["binding"] == "HC_DB"
+          assert db["database_name"] == "helpcrunch-test-memory"
+          assert db["database_id"] == "d726c736-2efa-4944-a98f-f6efe26a5c00"
+          assert db["migrations_dir"] == "migrations/helpcrunch"
           Path("wrangler.jsonc").write_text(json.dumps(source, indent=2))
           print("Selected test Worker: auction-auto-helpcrunch-test")
           PY
       - name: Check syntax
         run: uv run python -m py_compile src/helpcrunch*.py
+      - name: Initialize isolated D1 schema
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN" && test -n "$CLOUDFLARE_ACCOUNT_ID"
+          npx --yes wrangler@4 d1 execute helpcrunch-test-memory --remote --file=migrations/helpcrunch/0001_dialog_state.sql
       - name: Deploy isolated Python Worker
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
