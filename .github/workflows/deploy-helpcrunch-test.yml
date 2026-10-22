@@ -53,13 +53,6 @@ jobs:
           PY
       - name: Check syntax
         run: uv run python -m py_compile src/helpcrunch*.py
-      - name: Initialize isolated D1 schema
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          test -n "$CLOUDFLARE_API_TOKEN" && test -n "$CLOUDFLARE_ACCOUNT_ID"
-          npx --yes wrangler@4 d1 execute helpcrunch-test-memory --remote --file=migrations/helpcrunch/0001_dialog_state.sql
       - name: Deploy isolated Python Worker
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
