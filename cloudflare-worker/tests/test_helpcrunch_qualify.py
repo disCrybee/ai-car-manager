@@ -16,6 +16,9 @@ class QualifyTests(unittest.TestCase):
     def test_explicit_budget(self):
         self.assertIsNone(qualification_question("Бюджет 700000 грн", field="budget"))
         self.assertIsNone(qualification_question("Бюджет $25000", field="budget"))
+        self.assertIsNone(qualification_question("Бюджет у гривнях 700000", field="budget"))
+        self.assertIsNone(qualification_question("Бюджет 700000 гривень", field="budget"))
+        self.assertIsNone(qualification_question("Бюджет 30 тис. USD", field="budget"))
 
     def test_ambiguous_mileage(self):
         self.assertIn("100 тисяч", qualification_question("Пробіг до 100", field="mileage"))
