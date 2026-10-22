@@ -57,3 +57,47 @@ async def claim_event(db, event_key, chat_id, application_id):
     meta = result.get("meta", {}) if isinstance(result, dict) else getattr(result, "meta", None)
     changes = meta.get("changes", 0) if isinstance(meta, dict) else getattr(meta, "changes", 0)
     return changes == 1
+
+
+async def commit_dialog_event(db, event_key, chat_id, application_id, state):
+    """Atomically claim an event and save state; fail closed on D1 errors.
+
+    Returns False only if the exact event key already exists. Any other D1
+    failure is re-raised. This avoids consuming an event without saving state.
+    """
+    chat_id = _positive_int(chat_id, "chat_id")
+    application_id = _positive_int(application_id, "application_id")
+    if not isinstance(event_key, str) or not 1 <= len(event_key) <= 180:
+        raise ValueError("Invalid event key")
+    if not isinstance(state, dict):
+        raise ValueError("Dialog state must be an object")
+    payload = json.dumps(state, ensure_ascii=False, separators=(",", ":"))
+    if len(payload) > 32000:
+        raise ValueError("Dialog state too large")
+    exists = await db.prepare(
+        "SELECT event_key FROM hc_processed_events WHERE event_key = ?"
+    ).bind(event_key).first()
+    if exists:
+        return False
+    try:
+        await db.batch([
+            db.prepare(
+                "INSERT INTO hc_processed_events(event_key, chat_id, application_id) "
+                "VALUES (?, ?, ?)"
+            ).bind(event_key, chat_id, application_id),
+            db.prepare(
+                "INSERT INTO hc_dialog_state(chat_id, application_id, state_json) "
+                "VALUES (?, ?, ?) ON CONFLICT(chat_id, application_id) DO UPDATE SET "
+                "state_json = excluded.state_json, updated_at = CURRENT_TIMESTAMP"
+            ).bind(chat_id, application_id, payload),
+        ])
+    except Exception:
+        # In a race, only the loser with a committed matching event is duplicate.
+        # Never swallow other failures or pretend persistence succeeded.
+        exists = await db.prepare(
+            "SELECT event_key FROM hc_processed_events WHERE event_key = ?"
+        ).bind(event_key).first()
+        if exists:
+            return False
+        raise
+    return True
