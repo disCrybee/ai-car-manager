@@ -6,7 +6,7 @@ This module does not write any data or send chat messages.
 import re
 from helpcrunch_qualify import qualification_question
 
-CURRENCY = re.compile(r"(?<!\w)(грн|гривн(?:і|я|ях|ю)|₴|uah|usd|долар(?:ів|и|ах)?|дол|\$|євро|eur|€)(?!\w)", re.I)
+CURRENCY = re.compile(r"(?<!\w)(грн|грив(?:н(?:і|я|ях|ю)|ень)|₴|uah|usd|долар(?:ів|и|ах)?|дол|\$|євро|eur|€)(?!\w)", re.I)
 MILEAGE_UNIT = re.compile(r"(?<!\w)(км|km|миль|милі|miles?|mi)(?!\w)", re.I)
 THOUSANDS = re.compile(r"тисяч|тис\.?|thousand|\bk\b", re.I)
 
