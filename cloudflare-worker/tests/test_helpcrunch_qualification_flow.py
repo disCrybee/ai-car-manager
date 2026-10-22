@@ -10,7 +10,7 @@ class QualificationFlowTests(unittest.TestCase):
     def test_budget_requires_currency(self):
         result = next_clarification("Мій бюджет 700.000")
         self.assertEqual(result["pending_field"], "budget")
-        self.assertIn("валют", result["question"].lower())
+        self.assertIn("гривнях", result["question"].lower())
         self.assertIsNone(next_clarification("у гривнях", "budget")["pending_field"])
         self.assertIsNone(next_clarification("грн", "budget")["pending_field"])
 
