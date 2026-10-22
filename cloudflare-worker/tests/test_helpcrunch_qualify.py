@@ -22,7 +22,7 @@ class QualifyTests(unittest.TestCase):
 
     def test_ambiguous_mileage(self):
         self.assertIn("100 тисяч", qualification_question("Пробіг до 100", field="mileage"))
-        self.assertIn("милі", qualification_question("Пробіг до 100 тисяч", field="mileage"))
+        self.assertIn("милях", qualification_question("Пробіг до 100 тисяч", field="mileage"))
 
     def test_unit_shorthand_still_needs_scale(self):
         self.assertIsNotNone(qualification_question("Пробіг 100 км", field="mileage"))
