@@ -34,7 +34,7 @@ def qualification_question(text: str, *, field: str):
         last = matches[-1]
         if _quantity(last.group(1)) is None and not re.search(r"\d+\s*(?:тисяч|тис\.?)", value, re.I):
             return None
-        if last.group(2) or CURRENCY_TOKEN.search(value):
+        if last.group(2) or CURRENCY_TOKEN.search(value) or any(symbol in value for symbol in ("$", "€", "₴")):
             return None
         return "Підкажіть, будь ласка, бюджет Ви вказали в гривнях, доларах США чи євро?"
     if field == "mileage":
