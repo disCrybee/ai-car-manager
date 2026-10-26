@@ -50,10 +50,12 @@ async def list_applications(api_key: str):
     return await _request(api_key, "GET", "/applications?limit=100")
 
 
-async def get_chat_messages(api_key: str, chat_id: int):
+async def get_chat_messages(api_key: str, chat_id: int, *, limit: int = 20):
     if int(chat_id) <= 0:
         raise ValueError("Invalid chat id")
-    return await _request(api_key, "GET", f"/chats/{int(chat_id)}/messages?limit=20")
+    if not 1 <= limit <= 100:
+        raise ValueError("Invalid HelpCrunch message history limit")
+    return await _request(api_key, "GET", f"/chats/{int(chat_id)}/messages?limit={limit}")
 
 
 def test_message_payload(chat_id: int, agent_id: int, text: str,
