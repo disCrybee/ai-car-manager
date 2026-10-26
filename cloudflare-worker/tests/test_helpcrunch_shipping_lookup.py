@@ -39,6 +39,8 @@ class ShippingContextTests(unittest.TestCase):
         self.assertIn("$1850", reply)
         self.assertNotIn("$1650", reply)
         self.assertNotIn("який спосіб транспортування", reply)
+        self.assertIn("Комплекс послуг", reply)
+        self.assertNotIn("актуальність тарифу", reply)
 
     def test_no_deterministic_quote_without_location(self):
         turns = [{"role":"user","content":"Скільки коштує доставка з Texas?"}]
