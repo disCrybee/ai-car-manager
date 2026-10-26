@@ -5,7 +5,7 @@ from pathlib import Path
 from sys import path
 from types import SimpleNamespace
 path.insert(0,str(Path(__file__).resolve().parents[1]/"src"))
-from helpcrunch_night_dispatch import shift_start_timestamp, extract_created_id, process_night_event
+from helpcrunch_night_dispatch import shift_start_timestamp, extract_created_id, process_night_event, incoming_is_latest_customer_message
 
 K=ZoneInfo("Europe/Kyiv")
 class NightDispatchTests(unittest.IsolatedAsyncioTestCase):
@@ -18,6 +18,15 @@ class NightDispatchTests(unittest.IsolatedAsyncioTestCase):
             stamp=shift_start_timestamp(current)
             expected=datetime(2026,10,26 if hour==23 else 25,23,tzinfo=K)
             self.assertEqual(stamp,int(expected.timestamp()))
+    def test_stale_customer_message_prevents_reply(self):
+        history = {"data": [
+            {"id": 52, "from": "customer"},
+            {"id": 51, "from": "customer"},
+        ]}
+        self.assertFalse(incoming_is_latest_customer_message(history, 51))
+        self.assertTrue(incoming_is_latest_customer_message(history, 52))
+        self.assertFalse(incoming_is_latest_customer_message({}, 52))
+
     def test_id_receipt_must_be_confirmed(self):
         self.assertEqual(extract_created_id({"id":55}),55)
         self.assertEqual(extract_created_id({"data":{"id":55}}),55)
