@@ -31,6 +31,8 @@ class CompletionTests(unittest.IsolatedAsyncioTestCase):
     def test_new_vehicle_restarts_but_thanks_does_not(self):
         self.assertTrue(is_new_vehicle_request("Tesla model S Plaid"))
         self.assertTrue(is_new_vehicle_request("Цікавить Audi Q7"))
+        self.assertTrue(is_new_vehicle_request("Добрий день, цікавить Rolls Royce Cullinan"))
+        self.assertTrue(is_new_vehicle_request("Цікавить нова модель невідомої марки"))
         self.assertFalse(is_new_vehicle_request("Дякую, очікую"))
         self.assertFalse(is_new_vehicle_request("0971222739"))
 
