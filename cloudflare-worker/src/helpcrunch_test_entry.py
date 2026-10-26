@@ -9,6 +9,7 @@ from helpcrunch_demo_memory import load_demo_history, save_demo_history
 from helpcrunch_webhook import describe_event, verify_signature
 from helpcrunch_brands import configured_brands, brand_for_application
 from helpcrunch_planner import plan_incoming
+from helpcrunch_test_dispatch import enabled_for_event, reserve_test_reply
 from helpcrunch_preview_pipeline import process_preview
 
 
@@ -210,6 +211,40 @@ class Default(WorkerEntrypoint):
         try:
             plan = plan_incoming(raw)
             metadata = plan["metadata"]
+            # Pilot is off unless deliberately enabled via Worker secret/variable.
+            pilot_flag = str(getattr(self.env, "HELPCRUNCH_PILOT_ENABLED", "") or "")
+            if enabled_for_event(metadata, pilot_flag):
+                db = getattr(self.env, "HC_DB", None)
+                groq_key = str(getattr(self.env, "GROQ_API_KEY", "") or "")
+                hc_key = str(getattr(self.env, "HELPCRUNCH_API_KEY", "") or "")
+                memory_secret = str(getattr(self.env, "HELPCRUNCH_DEMO_TOKEN", "") or "")
+                if db is None or not groq_key or not hc_key or not memory_secret:
+                    return Response.json({"ok": False, "error": "Pilot not configured"}, status=503)
+                # Reserve before sending: retries cannot accidentally duplicate a reply.
+                if not await reserve_test_reply(db, metadata):
+                    return Response.json({"ok": True, "mode": "pilot-duplicate"})
+                payload = json.loads(raw)
+                incoming = payload["eventData"]["message"]["text"]
+                if not isinstance(incoming, str) or not 1 <= len(incoming.strip()) <= 1000:
+                    return Response.json({"ok": True, "mode": "pilot-ignored"})
+                session = "hc60354-webhook"
+                try:
+                    history = await load_demo_history(db, session, memory_secret)
+                    turns = history + [{"role": "user", "content": incoming}]
+                    answer = await generate_reply(groq_key, "Auction Auto", turns)
+                    await send_test_message(
+                        hc_key, 60354, 21, answer,
+                        allowed_chat_id=60354, allowed_agent_id=21, enabled=True,
+                    )
+                    await save_demo_history(db, session, memory_secret, turns + [
+                        {"role": "assistant", "content": answer}
+                    ])
+                    return Response.json({"ok": True, "mode": "pilot-replied"})
+                except Exception as exc:
+                    # An uncertain send must never be repeated automatically.
+                    print("HelpCrunch pilot failed; event reserved", type(exc).__name__)
+                    return Response.json({"ok": False, "error": "Pilot processing failed; no automatic retry"}, status=502)
+
             db = getattr(self.env, "HC_DB", None)
             preview = await process_preview(raw, metadata, db)
             metadata["preview_status"] = preview["status"]
