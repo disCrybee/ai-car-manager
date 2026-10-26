@@ -2,7 +2,7 @@ import unittest
 from pathlib import Path
 from sys import path
 path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from helpcrunch_shipping_lookup import shipping_context
+from helpcrunch_shipping_lookup import shipping_context, confirmed_route_reply
 from helpcrunch_groq import build_messages
 
 class ShippingContextTests(unittest.TestCase):
@@ -19,6 +19,16 @@ class ShippingContextTests(unittest.TestCase):
         self.assertIn("не повна вартість", value)
         prompt = build_messages("Auction Auto", question, company_context=value)[0]["content"]
         self.assertIn("ABILENE", prompt)
+    def test_deterministic_exact_tariff_reply(self):
+        turns = [{"role":"user","content":"Скільки коштує доставка автомобіля з Copart Abilene, Texas?"}]
+        reply = confirmed_route_reply(turns)
+        self.assertIsNotNone(reply)
+        self.assertIn("$500", reply)
+        self.assertIn("Houston", reply)
+        self.assertIn("не повна вартість", reply)
+    def test_no_deterministic_quote_without_location(self):
+        turns = [{"role":"user","content":"Скільки коштує доставка з Texas?"}]
+        self.assertIsNone(confirmed_route_reply(turns))
     def test_just_state_does_not_leak_price(self):
         question = [{"role":"user","content":"Доставка Copart Texas скільки?"}]
         self.assertNotIn("$", shipping_context(question))
