@@ -30,6 +30,16 @@ class ShippingContextTests(unittest.TestCase):
         self.assertIn("$1650", reply)
         self.assertIn("$1850", reply)
         self.assertIn("$2150", reply)
+    def test_passenger_quote_short_and_complete(self):
+        turns = [{"role": "user", "content":
+                  "Скільки буде коштувати доставка легкового авто з Copart Abilene, Texas до Клайпеди?"}]
+        reply = confirmed_route_reply(turns)
+        self.assertIn("$500", reply)
+        self.assertIn("$1350", reply)
+        self.assertIn("$1850", reply)
+        self.assertNotIn("$1650", reply)
+        self.assertNotIn("який спосіб транспортування", reply)
+
     def test_no_deterministic_quote_without_location(self):
         turns = [{"role":"user","content":"Скільки коштує доставка з Texas?"}]
         self.assertIsNone(confirmed_route_reply(turns))
