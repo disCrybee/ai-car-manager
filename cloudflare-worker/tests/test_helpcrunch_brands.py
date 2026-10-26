@@ -20,6 +20,7 @@ class BrandingTests(unittest.TestCase):
 
     def test_branded_and_unbranded_instructions(self):
         self.assertIn("Atlantic Auto", brand_instruction("Atlantic Auto"))
+        self.assertIn("спільними для всіх", brand_instruction("Auction Auto"))
         self.assertIn("не називай конкретну компанію", brand_instruction(None))
 
 
