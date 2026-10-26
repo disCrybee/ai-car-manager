@@ -272,11 +272,6 @@ class Default(WorkerEntrypoint):
                 session = "hc60354-webhook"
                 try:
                     history = [] if restarting else await load_demo_history(db, session, memory_secret)
-                    # Preserve closure for acknowledgements; allow substantive questions.
-                    if not followup and any(turn.get("role") == "user" and contains_phone(turn.get("content"))
-                           for turn in history):
-                        await pilot_mark_done(db)
-                        return Response.json({"ok": True, "mode": "pilot-completed-silent"})
                     turns = history + [{"role": "user", "content": incoming}]
                     if contains_phone(incoming) and not completed:
                         await pilot_mark_done(db)
