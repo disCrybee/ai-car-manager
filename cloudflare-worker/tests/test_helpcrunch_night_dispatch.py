@@ -5,7 +5,7 @@ from pathlib import Path
 from sys import path
 from types import SimpleNamespace
 path.insert(0,str(Path(__file__).resolve().parents[1]/"src"))
-from helpcrunch_night_dispatch import shift_start_timestamp, extract_created_id, process_night_event, incoming_is_latest_customer_message
+from helpcrunch_night_dispatch import shift_start_timestamp, extract_created_id, process_night_event, incoming_is_latest_customer_message, confirmed_chat_id, receipt_matches_chat
 
 K=ZoneInfo("Europe/Kyiv")
 class NightDispatchTests(unittest.IsolatedAsyncioTestCase):
@@ -32,6 +32,20 @@ class NightDispatchTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(extract_created_id({"data":{"id":55}}),55)
         for body in ({},{ "id":None},{"id":"55"}):
             with self.assertRaises(ValueError):extract_created_id(body)
+    def test_chat_preflight_requires_exact_identity(self):
+        self.assertTrue(confirmed_chat_id({"id":60360},60360))
+        self.assertTrue(confirmed_chat_id({"data":{"id":60360}},60360))
+        self.assertFalse(confirmed_chat_id({"id":60359},60360))
+        self.assertFalse(confirmed_chat_id({},60360))
+        self.assertFalse(confirmed_chat_id({"data":[]},60360))
+
+    def test_receipt_target_must_match_chat(self):
+        self.assertEqual(receipt_matches_chat({"id":70,"chat":60360},60360),70)
+        self.assertEqual(receipt_matches_chat({"data":{"id":70,"chat":{"id":60360}}},60360),70)
+        self.assertEqual(receipt_matches_chat({"id":70},60360),70)
+        with self.assertRaises(ValueError):
+            receipt_matches_chat({"id":70,"chat":60359},60360)
+
     async def test_no_send_when_disabled(self):
         result=await process_night_event(self.meta,"Скільки доставка?",env=self.env,
             brand="Auction Auto",now=datetime(2026,10,26,23,tzinfo=K),live=True)
