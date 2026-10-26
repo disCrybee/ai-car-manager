@@ -12,6 +12,7 @@ class BudgetGuardTests(unittest.TestCase):
     def test_low_usd_budget_while_no_currency_inference(self):
         reply = low_usd_budget_reply("Добрий день, цікавить авто в бюджет 8.000$")
         self.assertIsNotNone(reply)
+        self.assertIn("$8 000", reply)
         self.assertIn("дуже обмеженим", reply)
         self.assertIn("$10 000", reply)
         self.assertNotIn("тип — седан", reply)
