@@ -77,6 +77,15 @@ def confirmed_route_reply(history):
     suv = rates["Crossover/SUV/Standard Truck"].get(port)
     if not all(isinstance(v, (int, float)) for v in (inland, sedan, suv)):
         return None
+    # A clearly named passenger car does not need irrelevant SUV prices.
+    latest_lower = latest.casefold()
+    passenger = any(word in latest_lower for word in ("легков", "седан", "sedan", "coupe", "купе"))
+    if passenger:
+        return (f"З Copart {location['location']} до порту {port} наземна доставка — "
+                f"${inland}, далі до Клайпеди за тарифом для легкового авто — "
+                f"${sedan}. Разом орієнтовно ${inland + sedan} за дві ділянки. "
+                "Інші збори та митне оформлення не включені; актуальність тарифу "
+                "потрібно підтвердити перед замовленням.")
     return (
         f"За нашим прайсом для {auction} {location['location']}: "
         f"наземна доставка до порту {port} — ${inland}. "
