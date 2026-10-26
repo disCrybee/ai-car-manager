@@ -11,7 +11,7 @@ class HelpCrunchConversationTests(unittest.TestCase):
         prompt = helpcrunch_system_prompt("Auction Auto")
         self.assertIn("молодшого менеджера", prompt)
         self.assertIn("Звертайся на «Ви»", prompt)
-        self.assertIn("старшому менеджеру", prompt)
+        self.assertIn("передати звернення\nменеджеру", prompt)
         self.assertIn("Auction Auto", prompt)
         self.assertNotIn("Ти — AI-консультант", prompt)
 
