@@ -10,6 +10,7 @@ from helpcrunch_webhook import describe_event, verify_signature
 from helpcrunch_brands import configured_brands, brand_for_application
 from helpcrunch_planner import plan_incoming
 from helpcrunch_test_dispatch import enabled_for_event, reserve_test_reply
+from helpcrunch_pilot_completion import contains_phone, pilot_is_done, pilot_mark_done, ACK
 from helpcrunch_preview_pipeline import process_preview
 
 
@@ -223,6 +224,8 @@ class Default(WorkerEntrypoint):
                 memory_secret = str(getattr(self.env, "HELPCRUNCH_DEMO_TOKEN", "") or "")
                 if db is None or not groq_key or not hc_key or not memory_secret:
                     return Response.json({"ok": False, "error": "Pilot not configured"}, status=503)
+                if await pilot_is_done(db):
+                    return Response.json({"ok": True, "mode": "pilot-completed-silent"})
                 # Reserve before sending: retries cannot accidentally duplicate a reply.
                 if not await reserve_test_reply(db, metadata):
                     return Response.json({"ok": True, "mode": "pilot-duplicate"})
@@ -233,8 +236,17 @@ class Default(WorkerEntrypoint):
                 session = "hc60354-webhook"
                 try:
                     history = await load_demo_history(db, session, memory_secret)
+                    # Existing history may include a phone from before this safety rule.
+                    if any(turn.get("role") == "user" and contains_phone(turn.get("content"))
+                           for turn in history):
+                        await pilot_mark_done(db)
+                        return Response.json({"ok": True, "mode": "pilot-completed-silent"})
                     turns = history + [{"role": "user", "content": incoming}]
-                    answer = await generate_reply(groq_key, "Auction Auto", turns)
+                    if contains_phone(incoming):
+                        await pilot_mark_done(db)
+                        answer = ACK
+                    else:
+                        answer = await generate_reply(groq_key, "Auction Auto", turns)
                     await send_test_message(
                         hc_key, 60354, 21, answer,
                         allowed_chat_id=60354, allowed_agent_id=21, enabled=True,
