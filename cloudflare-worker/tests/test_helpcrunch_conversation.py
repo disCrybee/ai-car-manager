@@ -17,7 +17,7 @@ class HelpCrunchConversationTests(unittest.TestCase):
 
     def test_do_not_claim_unconfirmed_handoff(self):
         prompt = helpcrunch_system_prompt("Atlantic Express")
-        self.assertIn("тільки після успішного підтвердження CRM", prompt)
+        self.assertIn("без фактичної передачі або підтвердження системи", prompt)
         self.assertIn("що це автоматизована консультація", prompt)
         self.assertIn("Atlantic Express", prompt)
 
