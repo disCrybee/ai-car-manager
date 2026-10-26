@@ -1,6 +1,10 @@
 """Per-chat completion flag for night assistant."""
 import json
-from helpcrunch_night_history import night_state_key
+from helpcrunch_bot_message_ids import guard_key
+
+def night_state_key(chat_id, application_id):
+    chat, key = guard_key(chat_id, application_id)
+    return chat, key - 1000000000
 
 async def get_night_completion(db, chat_id, application_id):
     chat, key = night_state_key(chat_id, application_id)
