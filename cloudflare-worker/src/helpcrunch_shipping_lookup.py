@@ -45,3 +45,23 @@ def shipping_context(history):
             "Портові, морські, митні та інші витрати не включені. "
             "Називай цифри лише із зазначенням їхнього обмеженого обсягу, "
             "а повний кошторис запропонуй уточнити з менеджером.")
+
+def confirmed_route_reply(history):
+    """Give a grounded quote deterministically, not at LLM discretion."""
+    if not history or history[-1].get("role") != "user":
+        return None
+    latest = history[-1].get("content", "")
+    if not any(word in latest.casefold() for word in ("достав", "shipping", "перевез")):
+        return None
+    context = shipping_context(history)
+    if not context.startswith("ВНУТРІШНІ ДОВІДКОВІ ТАРИФИ"):
+        return None
+    # Context is derived only from numeric verified sheet rows.
+    details = context.split("перевезення до порту: ", 1)[-1].split(". Ціни орієнтовні", 1)[0]
+    if not details or "доставка від локації" not in details:
+        return None
+    details = details.replace(" (доставка від локації до порту США)", "")
+    return ("За нашим прайсом перевезення від зазначеної аукціонної локації "
+            "до порту відправлення: " + details.rstrip(".") + ". "
+            "Це лише наземна доставка до порту, не повна вартість доставки в Україну. "
+            "Морське перевезення та інші витрати менеджер розрахує окремо.")
