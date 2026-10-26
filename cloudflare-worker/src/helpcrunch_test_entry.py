@@ -14,7 +14,7 @@ from helpcrunch_planner import plan_incoming
 from helpcrunch_test_dispatch import enabled_for_event, reserve_test_reply
 from helpcrunch_pilot_completion import contains_phone, pilot_is_done, pilot_mark_done, pilot_clear_done, is_new_vehicle_request, is_substantive_followup, ACK
 from helpcrunch_preview_pipeline import process_preview
-from helpcrunch_night_gate import night_preview_decision
+from helpcrunch_night_gate import night_preview_decision, live_chat_allowed
 from helpcrunch_night_dispatch import process_night_event
 
 
@@ -309,11 +309,10 @@ class Default(WorkerEntrypoint):
                     and metadata["night_rollout"]["eligible"]):
                 # Sending requires BOTH independent night flags; brand is neutral.
                 # Enabling the flags is a separate operator action after validation.
-                live_enabled = (
-                    str(getattr(self.env, "HELPCRUNCH_NIGHT_SEND_ENABLED", "") or "") == "true"
-                    and str(metadata.get("chat_id")) == str(
-                        getattr(self.env, "HELPCRUNCH_NIGHT_TEST_CHAT_ID", "") or ""
-                    )
+                live_enabled = live_chat_allowed(
+                    metadata.get("chat_id"),
+                    str(getattr(self.env, "HELPCRUNCH_NIGHT_SEND_ENABLED", "") or ""),
+                    getattr(self.env, "HELPCRUNCH_NIGHT_TEST_CHAT_ID", ""),
                 )
                 outcome = await process_night_event(
                     metadata, json.loads(raw)["eventData"]["message"].get("text"),
