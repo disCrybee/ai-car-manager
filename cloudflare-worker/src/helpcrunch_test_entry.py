@@ -307,7 +307,7 @@ class Default(WorkerEntrypoint):
             # agent takeover without sending a customer-facing message.
             if (str(metadata.get("chat_id")) != "60354"
                     and metadata["night_rollout"]["eligible"]):
-                # Sending requires BOTH independent night flags and a mapped brand.
+                # Sending requires BOTH independent night flags; brand is neutral.
                 # Enabling the flags is a separate operator action after validation.
                 live_enabled = str(getattr(self.env, "HELPCRUNCH_NIGHT_SEND_ENABLED", "") or "") == "true"
                 outcome = await process_night_event(
