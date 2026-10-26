@@ -26,6 +26,21 @@ def shift_start_timestamp(now=None):
     shift_day = local.date() if local.hour >= 23 else (local - timedelta(days=1)).date()
     return int(datetime(shift_day.year, shift_day.month, shift_day.day, 23, tzinfo=KYIV).timestamp())
 
+def incoming_is_latest_customer_message(response, expected_message_id):
+    """Prevent stale replies if a customer wrote again while the LLM was thinking."""
+    if not isinstance(response, dict) or not isinstance(response.get("data"), list):
+        return False
+    try:
+        for item in response["data"]:
+            if not isinstance(item, dict):
+                return False
+            if item.get("from") == "customer":
+                return int(item["id"]) == int(expected_message_id)
+    except (ValueError, TypeError, KeyError):
+        return False
+    return False
+
+
 def extract_created_id(response):
     if not isinstance(response, dict):
         raise ValueError("Missing HelpCrunch send receipt")
@@ -91,6 +106,8 @@ async def process_night_event(metadata, incoming, *, env, brand, now=None,
         return {"mode": "night-cutoff"}
     # Re-read to catch a manager reply while Groq was generating.
     current_messages = await get_chat_messages(api_key, chat, limit=100)
+    if not incoming_is_latest_customer_message(current_messages, msg):
+        return {"mode": "night-stale-message"}
     second = await evaluate_night_chat(metadata, enabled, brand, db, current_messages,
                                        shift_started=shift_start_timestamp(), now=datetime.now(KYIV))
     if not second["eligible"]:
