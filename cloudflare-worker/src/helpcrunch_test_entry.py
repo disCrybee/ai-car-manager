@@ -5,7 +5,7 @@ import hmac
 import json
 from helpcrunch_groq import generate_reply
 from helpcrunch_api import list_agents, manager_candidates, get_chat_messages, send_test_message
-from helpcrunch_demo_memory import load_demo_history, save_demo_history
+from helpcrunch_demo_memory import load_demo_history, save_demo_history, demo_chat_id, DEMO_APPLICATION
 from helpcrunch_webhook import describe_event, verify_signature
 from helpcrunch_brands import configured_brands, brand_for_application
 from helpcrunch_planner import plan_incoming
@@ -101,6 +101,30 @@ class Default(WorkerEntrypoint):
             except Exception as exc:
                 print("HelpCrunch restricted test send failed", type(exc).__name__)
                 return Response.json({"ok": False, "error": "Test send failed"}, status=502)
+        if path == "/demo-helpcrunch-reset":
+            if request.method != "POST":
+                return Response("Method Not Allowed", status=405)
+            token = str(getattr(self.env, "HELPCRUNCH_DEMO_TOKEN", "") or "")
+            if not token or not hmac.compare_digest(
+                request.headers.get("Authorization", ""), "Bearer " + token
+            ):
+                return Response("Unauthorized", status=401)
+            db = getattr(self.env, "HC_DB", None)
+            if db is None:
+                return Response.json({"ok": False, "error": "D1 not configured"}, status=503)
+            try:
+                # Remove only controlled pilot state; never touch chat messages or other users.
+                await db.prepare(
+                    "DELETE FROM hc_dialog_state WHERE chat_id = ? AND application_id = ?"
+                ).bind(60354, -2).run()
+                await db.prepare(
+                    "DELETE FROM hc_dialog_state WHERE chat_id = ? AND application_id = ?"
+                ).bind(demo_chat_id("hc60354-webhook", token), DEMO_APPLICATION).run()
+                return Response.json({"ok": True, "pilot_chat": 60354,
+                                      "memory_reset": True, "outbound_enabled_globally": False})
+            except Exception as exc:
+                print("Pilot reset failed", type(exc).__name__)
+                return Response.json({"ok": False, "error": "Reset failed"}, status=502)
         if path == "/demo-helpcrunch-ai-send":
             if request.method != "POST":
                 return Response("Method Not Allowed", status=405)
