@@ -46,7 +46,9 @@ NEW_REQUEST = re.compile(
 def is_new_vehicle_request(text):
     if not isinstance(text, str):
         return False
-    return bool(NEW_REQUEST.search(text.strip())) and not contains_phone(text)
+    value = text.strip().casefold()
+    fresh_interest = bool(re.search(r"(?:цікавить|шукаю|хочу (?:придбати|купити|підібрати))\s+.{3,}", value))
+    return (bool(NEW_REQUEST.search(value)) or fresh_interest) and not contains_phone(value)
 
 
 async def pilot_clear_done(db):
