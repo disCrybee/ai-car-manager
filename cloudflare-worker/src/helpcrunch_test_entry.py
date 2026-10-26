@@ -99,6 +99,57 @@ class Default(WorkerEntrypoint):
             except Exception as exc:
                 print("HelpCrunch restricted test send failed", type(exc).__name__)
                 return Response.json({"ok": False, "error": "Test send failed"}, status=502)
+        if path == "/demo-helpcrunch-ai-send":
+            if request.method != "POST":
+                return Response("Method Not Allowed", status=405)
+            token = str(getattr(self.env, "HELPCRUNCH_DEMO_TOKEN", "") or "")
+            if not token or not hmac.compare_digest(
+                request.headers.get("Authorization", ""), "Bearer " + token
+            ):
+                return Response("Unauthorized", status=401)
+            groq_key = str(getattr(self.env, "GROQ_API_KEY", "") or "")
+            hc_key = str(getattr(self.env, "HELPCRUNCH_API_KEY", "") or "")
+            db = getattr(self.env, "HC_DB", None)
+            if not groq_key or not hc_key or db is None:
+                return Response.json({"ok": False, "error": "Missing test configuration"}, status=503)
+            stage = "input"
+            try:
+                raw_body = await request.text()
+                if len(raw_body) > 4000:
+                    return Response("Request Too Large", status=413)
+                data = json.loads(raw_body)
+                if not isinstance(data, dict):
+                    raise ValueError("Bad request")
+                prompt = data.get("text")
+                if not isinstance(prompt, str) or not 1 <= len(prompt.strip()) <= 1000:
+                    raise ValueError("Invalid prompt")
+                # A fixed internal session and explicit test-only chat/agent.
+                session = "hc60354-ai-test"
+                stage = "memory_read"
+                history = await load_demo_history(db, session, token)
+                turns = history + [{"role": "user", "content": prompt}]
+                stage = "groq"
+                answer = await generate_reply(groq_key, "Auction Auto", turns)
+                stage = "helpcrunch_send"
+                await send_test_message(
+                    hc_key, 60354, 21, answer,
+                    allowed_chat_id=60354, allowed_agent_id=21, enabled=True,
+                )
+                stage = "memory_write"
+                await save_demo_history(db, session, token, turns + [
+                    {"role": "assistant", "content": answer}
+                ])
+                return Response.json({
+                    "ok": True, "chat_id": 60354, "agent_id": 21,
+                    "mode": "manual-ai-test", "outbound_enabled_globally": False,
+                })
+            except (ValueError, TypeError):
+                return Response("Bad Request", status=400)
+            except Exception as exc:
+                print("HelpCrunch controlled AI-send failed", stage, type(exc).__name__)
+                return Response.json({
+                    "ok": False, "error": "AI test failed", "stage": stage,
+                }, status=502)
         if path == "/demo-groq":
             if request.method != "POST":
                 return Response("Method Not Allowed", status=405)
