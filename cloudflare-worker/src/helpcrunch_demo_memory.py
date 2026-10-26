@@ -18,7 +18,8 @@ def demo_chat_id(session: str, signing_secret: str) -> int:
     if not signing_secret:
         raise ValueError("Demo signing secret required")
     digest = hmac.new(signing_secret.encode(), session.encode(), hashlib.sha256).digest()
-    return -(int.from_bytes(digest[:7], "big") + 1)
+    # Keep identifiers within JS-safe integer range for Python Workers D1 .bind().
+    return -(int.from_bytes(digest[:6], "big") + 1)
 
 
 async def load_demo_history(db, session: str, secret: str) -> list:
