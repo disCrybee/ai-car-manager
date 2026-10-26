@@ -41,6 +41,9 @@ class CompletionTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(is_substantive_followup("Tesla Model S Plaid"))
         self.assertFalse(is_substantive_followup("Дякую, очікую"))
         self.assertFalse(is_substantive_followup("Дякую!"))
+        self.assertTrue(is_substantive_followup("Підкажіть, які у вас умови?"))
+        self.assertTrue(is_substantive_followup("Rolls Royce Cullinan"))
+        self.assertTrue(is_substantive_followup("Мені потрібна допомога з доставкою"))
 
     async def test_durable_completion(self):
         db = Db()
