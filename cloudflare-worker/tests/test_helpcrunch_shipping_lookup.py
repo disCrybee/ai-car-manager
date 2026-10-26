@@ -1,0 +1,30 @@
+import unittest
+from pathlib import Path
+from sys import path
+path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+from helpcrunch_shipping_lookup import shipping_context
+from helpcrunch_groq import build_messages
+
+class ShippingContextTests(unittest.TestCase):
+    def test_no_claim_without_exact_auction_location(self):
+        question = [{"role":"user","content":"Скільки доставка Tesla зі США?"}]
+        value = shipping_context(question)
+        self.assertIn("точну локацію", value)
+        self.assertNotIn("$", value)
+    def test_known_route_from_price_sheet(self):
+        question = [{"role":"user","content":"Яка доставка Copart ABILENE - Texas?"}]
+        value = shipping_context(question)
+        self.assertIn("Houston", value)
+        self.assertIn("500", value)
+        self.assertIn("не повна вартість", value)
+        prompt = build_messages("Auction Auto", question, company_context=value)[0]["content"]
+        self.assertIn("ABILENE", prompt)
+    def test_just_state_does_not_leak_price(self):
+        question = [{"role":"user","content":"Доставка Copart Texas скільки?"}]
+        self.assertNotIn("$", shipping_context(question))
+    def test_other_topics_do_not_inject_pricing(self):
+        question = [{"role":"user","content":"Шукаю BMW X5"}]
+        self.assertEqual(shipping_context(question), "")
+
+if __name__ == "__main__":
+    unittest.main()
