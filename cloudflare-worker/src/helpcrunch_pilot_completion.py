@@ -40,7 +40,7 @@ async def pilot_mark_done(db):
 NEW_REQUEST = re.compile(
     r"(?i)\b(?:tesla|bmw|audi|volkswagen|vw|mercedes|toyota|honda|"
     r"skoda|porsche|ford|hyundai|kia|lexus|mazda|nissan|volvo|"
-    r"renault|peugeot|citroen|land rover|range rover)\b"
+    r"renault|peugeot|citroen|land rover|range rover|rolls[ -]?royce|rolls|bentley|lamborghini|ferrari|aston martin)\b"
 )
 
 def is_new_vehicle_request(text):
