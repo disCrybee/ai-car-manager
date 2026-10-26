@@ -309,7 +309,12 @@ class Default(WorkerEntrypoint):
                     and metadata["night_rollout"]["eligible"]):
                 # Sending requires BOTH independent night flags; brand is neutral.
                 # Enabling the flags is a separate operator action after validation.
-                live_enabled = str(getattr(self.env, "HELPCRUNCH_NIGHT_SEND_ENABLED", "") or "") == "true"
+                live_enabled = (
+                    str(getattr(self.env, "HELPCRUNCH_NIGHT_SEND_ENABLED", "") or "") == "true"
+                    and str(metadata.get("chat_id")) == str(
+                        getattr(self.env, "HELPCRUNCH_NIGHT_TEST_CHAT_ID", "") or ""
+                    )
+                )
                 outcome = await process_night_event(
                     metadata, json.loads(raw)["eventData"]["message"].get("text"),
                     env=self.env, brand=metadata["brand"], live=live_enabled,
