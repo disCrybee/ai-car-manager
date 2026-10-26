@@ -59,7 +59,7 @@ async def process_night_event(metadata, incoming, *, env, brand, now=None,
     if history_response is None:
         # 100 is the documented maximum; do not silently trust 20 recent messages.
         history_response = await get_chat_messages(api_key, chat, limit=100)
-    brand = "Neutral Automotive Consultant"
+    brand = None
     review = await evaluate_night_chat(metadata, enabled, brand, db, history_response,
                                        shift_started=shift_start_timestamp(now), now=now)
     if not review["eligible"]:
