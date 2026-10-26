@@ -160,9 +160,9 @@ class Default(WorkerEntrypoint):
                 turns = history + [{"role": "user", "content": prompt}]
                 stage = "groq"
                 answer = confirmed_route_reply(turns)
-                        if answer is None:
-                            answer = await generate_reply(groq_key, "Auction Auto", turns,
-                                                          company_context=shipping_context(turns))
+                if answer is None:
+                    answer = await generate_reply(groq_key, "Auction Auto", turns,
+                                                  company_context=shipping_context(turns))
                 stage = "helpcrunch_send"
                 await send_test_message(
                     hc_key, 60354, 21, answer,
