@@ -14,6 +14,7 @@ from helpcrunch_planner import plan_incoming
 from helpcrunch_test_dispatch import enabled_for_event, reserve_test_reply
 from helpcrunch_pilot_completion import contains_phone, pilot_is_done, pilot_mark_done, pilot_clear_done, is_new_vehicle_request, is_substantive_followup, ACK
 from helpcrunch_preview_pipeline import process_preview
+from helpcrunch_night_gate import night_preview_decision
 
 
 class Default(WorkerEntrypoint):
@@ -303,6 +304,7 @@ class Default(WorkerEntrypoint):
             metadata["clarification_needed"] = bool(preview.get("clarification_needed"))
             mapping = configured_brands(str(getattr(self.env, "HELPCRUNCH_BRANDS_JSON", "") or ""))
             metadata["brand"] = brand_for_application(metadata["application_id"], mapping)
+            metadata["night_rollout"] = night_preview_decision(metadata, str(getattr(self.env, "HELPCRUNCH_NIGHT_ENABLED", "") or ""), metadata["brand"])
         except (TypeError, ValueError):
             return Response("Bad Request", status=400)
         # Dry-run planning only: no message text in logs or responses.
