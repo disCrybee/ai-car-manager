@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 import hmac
 import json
 from helpcrunch_groq import generate_reply
+from helpcrunch_shipping_lookup import shipping_context
 from helpcrunch_api import list_agents, manager_candidates, get_chat_messages, send_test_message
 from helpcrunch_demo_memory import load_demo_history, save_demo_history, demo_chat_id, DEMO_APPLICATION
 from helpcrunch_webhook import describe_event, verify_signature
@@ -158,7 +159,8 @@ class Default(WorkerEntrypoint):
                 history = await load_demo_history(db, session, token)
                 turns = history + [{"role": "user", "content": prompt}]
                 stage = "groq"
-                answer = await generate_reply(groq_key, "Auction Auto", turns)
+                answer = await generate_reply(groq_key, "Auction Auto", turns,
+                                                      company_context=shipping_context(turns))
                 stage = "helpcrunch_send"
                 await send_test_message(
                     hc_key, 60354, 21, answer,
