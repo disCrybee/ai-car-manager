@@ -10,7 +10,7 @@ from helpcrunch_webhook import describe_event, verify_signature
 from helpcrunch_brands import configured_brands, brand_for_application
 from helpcrunch_planner import plan_incoming
 from helpcrunch_test_dispatch import enabled_for_event, reserve_test_reply
-from helpcrunch_pilot_completion import contains_phone, pilot_is_done, pilot_mark_done, pilot_clear_done, is_new_vehicle_request, ACK
+from helpcrunch_pilot_completion import contains_phone, pilot_is_done, pilot_mark_done, pilot_clear_done, is_new_vehicle_request, is_substantive_followup, ACK
 from helpcrunch_preview_pipeline import process_preview
 
 
@@ -255,7 +255,8 @@ class Default(WorkerEntrypoint):
                 incoming = payload["eventData"]["message"]["text"]
                 completed = await pilot_is_done(db)
                 restarting = completed and is_new_vehicle_request(incoming)
-                if completed and not restarting:
+                followup = completed and is_substantive_followup(incoming)
+                if completed and not followup:
                     return Response.json({"ok": True, "mode": "pilot-completed-silent"})
                 # Reserve before non-idempotent send, including a restarted conversation.
                 if not await reserve_test_reply(db, metadata):
@@ -267,13 +268,13 @@ class Default(WorkerEntrypoint):
                 session = "hc60354-webhook"
                 try:
                     history = [] if restarting else await load_demo_history(db, session, memory_secret)
-                    # Existing history may include a phone from before this safety rule.
-                    if any(turn.get("role") == "user" and contains_phone(turn.get("content"))
+                    # Preserve closure for acknowledgements; allow substantive questions.
+                    if not followup and any(turn.get("role") == "user" and contains_phone(turn.get("content"))
                            for turn in history):
                         await pilot_mark_done(db)
                         return Response.json({"ok": True, "mode": "pilot-completed-silent"})
                     turns = history + [{"role": "user", "content": incoming}]
-                    if contains_phone(incoming):
+                    if contains_phone(incoming) and not completed:
                         await pilot_mark_done(db)
                         answer = ACK
                     else:
