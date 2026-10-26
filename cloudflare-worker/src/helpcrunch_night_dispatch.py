@@ -41,6 +41,36 @@ def incoming_is_latest_customer_message(response, expected_message_id):
     return False
 
 
+def confirmed_chat_id(response, expected_chat_id):
+    """Reject missing or mismatched chat records before any outbound message."""
+    if not isinstance(response, dict):
+        return False
+    record = response.get("data", response)
+    if not isinstance(record, dict):
+        return False
+    try:
+        return int(record.get("id")) == int(expected_chat_id)
+    except (TypeError, ValueError):
+        return False
+
+
+def receipt_matches_chat(response, expected_chat_id):
+    """Require a message id and reject an explicitly mismatched chat target."""
+    receipt = extract_created_id(response)
+    record = response.get("data", response)
+    target = record.get("chat")
+    if target is None:
+        return receipt
+    if isinstance(target, dict):
+        target = target.get("id")
+    try:
+        if int(target) != int(expected_chat_id):
+            raise ValueError("HelpCrunch send receipt targets another chat")
+    except (TypeError, ValueError):
+        raise ValueError("HelpCrunch send receipt chat mismatch")
+    return receipt
+
+
 def extract_created_id(response):
     if not isinstance(response, dict):
         raise ValueError("Missing HelpCrunch send receipt")
@@ -112,9 +142,19 @@ async def process_night_event(metadata, incoming, *, env, brand, now=None,
                                        shift_started=shift_start_timestamp(), now=datetime.now(KYIV))
     if not second["eligible"]:
         return {"mode":"night-blocked-before-send", "reason":second["reason"]}
+    # Webhook chat IDs are not always retrievable through the chats API.
+    # Confirm the exact chat record exists before attempting an outbound send.
+    try:
+        chat_record = await _request(api_key, "GET", f"/chats/{chat}")
+    except RuntimeError as exc:
+        if "HTTP 404" in str(exc):
+            return {"mode": "night-chat-not-found", "chat_id": chat}
+        raise
+    if not confirmed_chat_id(chat_record, chat):
+        return {"mode": "night-chat-id-mismatch", "chat_id": chat}
     sent = await _request(api_key, "POST", "/messages",
                           {"chat":chat, "agent":AGENT_ID, "text":answer, "type":"message"})
-    receipt = extract_created_id(sent)
+    receipt = receipt_matches_chat(sent, chat)
     await record_bot_message_id(db, chat, app, receipt)
     await save_night_history(db, chat, app, turns + [{"role":"assistant","content":answer}])
     if contains_phone(incoming) or restarting:
