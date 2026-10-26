@@ -42,6 +42,19 @@ class ShippingContextTests(unittest.TestCase):
         self.assertIn("Комплекс послуг", reply)
         self.assertNotIn("актуальність тарифу", reply)
 
+    def test_suv_followup_uses_existing_route(self):
+        turns = [
+            {"role":"user","content":"Скільки коштує доставка легкового авто з Copart Abilene, Texas до Клайпеди?"},
+            {"role":"assistant","content":"Суша $500, море $1350"},
+            {"role":"user","content":"Окей, дякую. А якщо це буде кросовер?"},
+        ]
+        reply = confirmed_route_reply(turns)
+        self.assertIsNotNone(reply)
+        self.assertIn("$500", reply)
+        self.assertIn("$1650", reply)
+        self.assertIn("$2150", reply)
+        self.assertNotIn("$1400", reply)
+        self.assertNotIn("$1600", reply)
     def test_no_deterministic_quote_without_location(self):
         turns = [{"role":"user","content":"Скільки коштує доставка з Texas?"}]
         self.assertIsNone(confirmed_route_reply(turns))
