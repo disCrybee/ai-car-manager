@@ -10,10 +10,10 @@ FALLBACK = "openai/gpt-oss-20b"
 ENDPOINT = "https://api.groq.com/openai/v1/chat/completions"
 
 
-def build_messages(brand, history, *, clarification=None):
+def build_messages(brand, history, *, clarification=None, company_context=''):
     if len(history) > 16:
         history = history[-16:]
-    result = [{"role": "system", "content": helpcrunch_system_prompt(brand)}]
+    result = [{"role": "system", "content": helpcrunch_system_prompt(brand, company_context)}]
     for item in history:
         if not isinstance(item, dict):
             raise ValueError("Invalid dialogue turn")
@@ -32,11 +32,11 @@ def build_messages(brand, history, *, clarification=None):
     return result
 
 
-async def generate_reply(api_key, brand, history, *, clarification=None, transport=None):
+async def generate_reply(api_key, brand, history, *, clarification=None, transport=None, company_context=''):
     """Explicit caller invocation only; never sends text to HelpCrunch."""
     if not api_key:
         raise ValueError("Groq API key required")
-    messages = build_messages(brand, history, clarification=clarification)
+    messages = build_messages(brand, history, clarification=clarification, company_context=company_context)
     if transport is None:
         from workers import fetch
         transport = fetch
