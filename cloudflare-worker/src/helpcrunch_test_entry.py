@@ -4,7 +4,7 @@ from urllib.parse import urlparse
 import hmac
 import json
 from helpcrunch_groq import generate_reply
-from helpcrunch_api import list_agents, manager_candidates, get_chat_messages
+from helpcrunch_api import list_agents, manager_candidates, get_chat_messages, send_test_message
 from helpcrunch_demo_memory import load_demo_history, save_demo_history
 from helpcrunch_webhook import describe_event, verify_signature
 from helpcrunch_brands import configured_brands, brand_for_application
@@ -72,6 +72,33 @@ class Default(WorkerEntrypoint):
             except Exception as exc:
                 print("HelpCrunch test chat read failed", type(exc).__name__)
                 return Response.json({"ok": False, "error": "Chat read failed"}, status=502)
+        if path == "/demo-helpcrunch-send":
+            if request.method != "POST":
+                return Response("Method Not Allowed", status=405)
+            token = str(getattr(self.env, "HELPCRUNCH_DEMO_TOKEN", "") or "")
+            if not token or not hmac.compare_digest(
+                request.headers.get("Authorization", ""), "Bearer " + token
+            ):
+                return Response("Unauthorized", status=401)
+            api_key = str(getattr(self.env, "HELPCRUNCH_API_KEY", "") or "")
+            if not api_key:
+                return Response.json({"ok": False, "error": "HelpCrunch API not configured"}, status=503)
+            # Exactly one designated chat and agent. No caller-controlled message body.
+            # Sending requires an authenticated POST from the operator.
+            try:
+                result = await send_test_message(
+                    api_key, 60354, 21,
+                    "Тестове повідомлення AI-менеджера. Перевіряємо доставку через HelpCrunch.",
+                    allowed_chat_id=60354, allowed_agent_id=21, enabled=True,
+                )
+                message_id = result.get("id") if isinstance(result, dict) else None
+                return Response.json({
+                    "ok": True, "chat_id": 60354, "agent_id": 21,
+                    "message_id": message_id, "test_only": True,
+                })
+            except Exception as exc:
+                print("HelpCrunch restricted test send failed", type(exc).__name__)
+                return Response.json({"ok": False, "error": "Test send failed"}, status=502)
         if path == "/demo-groq":
             if request.method != "POST":
                 return Response("Method Not Allowed", status=405)
