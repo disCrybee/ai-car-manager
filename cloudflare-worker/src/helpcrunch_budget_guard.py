@@ -13,7 +13,7 @@ def low_usd_budget_reply(text):
     if not isinstance(text, str):
         return None
     t = text.casefold().replace(" ", "")
-    matches = re.findall(r"(\d{1,2}(?:[.,]\d{3})?|\d{4,5})(?:$|usd|долар(?:ів|и|а)?)", t)
+    matches = re.findall(r"(\d{1,2}(?:[.,]\d{3})?|\d{4,5})(?:\\$|usd|долар(?:ів|и|а)?)", t)
     if not matches:
         return None
     amount = int(matches[-1].replace(".", "").replace(",", ""))
