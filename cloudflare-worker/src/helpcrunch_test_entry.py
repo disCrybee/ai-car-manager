@@ -282,7 +282,10 @@ class Default(WorkerEntrypoint):
                         await pilot_mark_done(db)
                         answer = ACK
                     else:
-                        answer = await generate_reply(groq_key, "Auction Auto", turns)
+                        answer = confirmed_route_reply(turns)
+                        if answer is None:
+                            answer = await generate_reply(groq_key, "Auction Auto", turns,
+                                                          company_context=shipping_context(turns))
                     await send_test_message(
                         hc_key, 60354, 21, answer,
                         allowed_chat_id=60354, allowed_agent_id=21, enabled=True,
