@@ -15,6 +15,14 @@ class HelpCrunchConversationTests(unittest.TestCase):
         self.assertIn("Auction Auto", prompt)
         self.assertNotIn("Ти — AI-консультант", prompt)
 
+    def test_low_budget_guidance_and_neutral_opening(self):
+        prompt = helpcrunch_system_prompt("Auction Auto")
+        self.assertIn("$10 000", prompt)
+        self.assertIn("дуже обмеженим", prompt)
+        self.assertIn("не відмовляй у заявці", prompt)
+        self.assertIn("Не використовуй фрази «Дякую за інтерес»", prompt)
+        self.assertIn("не роби висновок, що це USD", prompt)
+
     def test_do_not_claim_unconfirmed_handoff(self):
         prompt = helpcrunch_system_prompt("Atlantic Express")
         self.assertIn("без фактичної передачі або підтвердження системи", prompt)
