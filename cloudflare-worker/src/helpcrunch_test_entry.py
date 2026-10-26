@@ -157,7 +157,7 @@ class Default(WorkerEntrypoint):
                 if not isinstance(prompt, str) or not 1 <= len(prompt.strip()) <= 1000:
                     raise ValueError("Invalid prompt")
                 # A fixed internal session and explicit test-only chat/agent.
-                session = "hc60354-ai-test"
+                session = "hc60360-ai-test"
                 stage = "memory_read"
                 history = await load_demo_history(db, session, token)
                 turns = history + [{"role": "user", "content": prompt}]
@@ -168,15 +168,15 @@ class Default(WorkerEntrypoint):
                                                   company_context=shipping_context(turns))
                 stage = "helpcrunch_send"
                 await send_test_message(
-                    hc_key, 60354, 21, answer,
-                    allowed_chat_id=60354, allowed_agent_id=21, enabled=True,
+                    hc_key, 60360, 21, answer,
+                    allowed_chat_id=60360, allowed_agent_id=21, enabled=True,
                 )
                 stage = "memory_write"
                 await save_demo_history(db, session, token, turns + [
                     {"role": "assistant", "content": answer}
                 ])
                 return Response.json({
-                    "ok": True, "chat_id": 60354, "agent_id": 21,
+                    "ok": True, "chat_id": 60360, "agent_id": 21,
                     "mode": "manual-ai-test", "outbound_enabled_globally": False,
                 })
             except (ValueError, TypeError):
