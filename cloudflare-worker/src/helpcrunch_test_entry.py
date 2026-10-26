@@ -26,7 +26,9 @@ class Default(WorkerEntrypoint):
             return Response.json({
                 "ok": True, "service": "helpcrunch-test", "mode": "receive-only",
                 "memory_configured": db is not None,
-                "memory_readable": readable, "outbound_enabled": False
+                "memory_readable": readable, "outbound_enabled": False,
+                "demo_token_configured": bool(str(getattr(self.env, "HELPCRUNCH_DEMO_TOKEN", "") or "")),
+                "groq_key_configured": bool(str(getattr(self.env, "GROQ_API_KEY", "") or ""))
             })
         if path == "/demo-groq":
             if request.method != "POST":
