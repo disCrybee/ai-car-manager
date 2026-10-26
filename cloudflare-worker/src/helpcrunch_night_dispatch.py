@@ -13,7 +13,8 @@ from helpcrunch_night_review import evaluate_night_chat
 from helpcrunch_shipping_lookup import confirmed_route_reply, shipping_context
 from helpcrunch_budget_guard import fresh_consultation, low_usd_budget_reply
 from helpcrunch_groq import generate_reply
-from helpcrunch_pilot_completion import contains_phone, ACK
+from helpcrunch_pilot_completion import contains_phone, ACK, is_substantive_followup
+from helpcrunch_night_completion import get_night_completion, set_night_completion
 from helpcrunch_store import claim_event
 from helpcrunch_webhook import is_night
 
@@ -71,8 +72,12 @@ async def process_night_event(metadata, incoming, *, env, brand, now=None,
     # A claimed event is never retried after uncertain third-party send.
     if not await claim_event(db, f"night:{app}:{chat}:{msg}", chat, app):
         return {"mode": "night-duplicate"}
+    completed = await get_night_completion(db, chat, app)
+    restarting = fresh_consultation(incoming)
+    if completed and not restarting and not is_substantive_followup(incoming):
+        return {"mode": "night-completed-silent"}
     old = await load_night_history(db, chat, app)
-    turns = ([] if fresh_consultation(incoming) else old) + [
+    turns = ([] if restarting else old) + [
         {"role": "user", "content": incoming}]
     if contains_phone(incoming):
         answer = ACK
@@ -85,9 +90,17 @@ async def process_night_event(metadata, incoming, *, env, brand, now=None,
                                           company_context=shipping_context(turns))
     if not is_night():
         return {"mode": "night-cutoff"}
+    # Re-read to catch a manager reply while Groq was generating.
+    current_messages = await get_chat_messages(api_key, chat, limit=100)
+    second = await evaluate_night_chat(metadata, enabled, brand, db, current_messages,
+                                       shift_started=shift_start_timestamp(), now=datetime.now(KYIV))
+    if not second["eligible"]:
+        return {"mode":"night-blocked-before-send", "reason":second["reason"]}
     sent = await _request(api_key, "POST", "/messages",
                           {"chat":chat, "agent":AGENT_ID, "text":answer, "type":"message"})
     receipt = extract_created_id(sent)
     await record_bot_message_id(db, chat, app, receipt)
     await save_night_history(db, chat, app, turns + [{"role":"assistant","content":answer}])
+    if contains_phone(incoming) or restarting:
+        await set_night_completion(db, chat, app, contains_phone(incoming))
     return {"mode":"night-replied", "chat_id":chat}
