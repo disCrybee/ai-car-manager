@@ -32,7 +32,8 @@ class Default(WorkerEntrypoint):
                 "memory_configured": db is not None,
                 "memory_readable": readable, "outbound_enabled": False,
                 "demo_token_configured": bool(str(getattr(self.env, "HELPCRUNCH_DEMO_TOKEN", "") or "")),
-                "groq_key_configured": bool(str(getattr(self.env, "GROQ_API_KEY", "") or ""))
+                "groq_key_configured": bool(str(getattr(self.env, "GROQ_API_KEY", "") or "")),
+                "pilot_enabled": str(getattr(self.env, "HELPCRUNCH_PILOT_ENABLED", "") or "") == "true"
             })
         if path == "/demo-helpcrunch-agents":
             if request.method != "GET":
