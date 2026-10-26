@@ -17,11 +17,14 @@ def human_takeover_since(messages_response, bot_message_ids, *, since_timestamp)
     items = messages_response["data"]
     if not items:
         return True
+    # The API sorts newest first; if our window is truncated, do not assume safety.
+    if len(items) >= 100 and float(items[-1].get("createdAt", 0)) >= since_timestamp:
+        return True
     for item in items:
         if not isinstance(item, dict):
             return True
         try:
-            created = int(item["createdAt"])
+            created = float(item["createdAt"])
             msg_id = int(item["id"])
         except (KeyError, ValueError, TypeError):
             return True
