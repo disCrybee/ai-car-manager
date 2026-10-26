@@ -25,7 +25,11 @@ class ShippingContextTests(unittest.TestCase):
         self.assertIsNotNone(reply)
         self.assertIn("$500", reply)
         self.assertIn("Houston", reply)
-        self.assertIn("не повна вартість", reply)
+        self.assertIn("Клайпеди", reply)
+        self.assertIn("$1350", reply)
+        self.assertIn("$1650", reply)
+        self.assertIn("$1850", reply)
+        self.assertIn("$2150", reply)
     def test_no_deterministic_quote_without_location(self):
         turns = [{"role":"user","content":"Скільки коштує доставка з Texas?"}]
         self.assertIsNone(confirmed_route_reply(turns))
