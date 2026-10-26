@@ -74,9 +74,10 @@ class Default(WorkerEntrypoint):
                                       "memory_enabled": session is not None})
             except (ValueError, TypeError):
                 return Response("Bad Request", status=400)
-            except Exception:
-                print("HelpCrunch isolated demo stage failed:", stage)
-                return Response.json({"ok": False, "error": "Generation failed", "stage": stage}, status=502)
+            except Exception as exc:
+                print("HelpCrunch isolated demo stage failed:", stage, type(exc).__name__)
+                return Response.json({"ok": False, "error": "Generation failed", "stage": stage,
+                                      "error_type": type(exc).__name__}, status=502)
         if path != "/helpcrunch-webhook":
             return Response("Not Found", status=404)
         if request.method != "POST":
