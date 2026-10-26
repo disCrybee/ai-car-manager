@@ -51,7 +51,9 @@ def confirmed_route_reply(history):
     if not history or history[-1].get("role") != "user":
         return None
     latest = history[-1].get("content", "")
-    if not any(word in latest.casefold() for word in ("достав", "shipping", "перевез")):
+    latest_lower = latest.casefold()
+    category_followup = any(w in latest_lower for w in ("кросовер", "кроссовер", "suv", "позашляхов", "джип"))
+    if not category_followup and not any(word in latest_lower for word in ("достав", "shipping", "перевез")):
         return None
     user_text = " ".join(t.get("content", "") for t in history[-12:]
                          if t.get("role") == "user")
@@ -80,6 +82,11 @@ def confirmed_route_reply(history):
     # A clearly named passenger car does not need irrelevant SUV prices.
     latest_lower = latest.casefold()
     passenger = any(word in latest_lower for word in ("легков", "седан", "sedan", "coupe", "купе"))
+    if category_followup:
+        return (f"Для кросовера з {auction} {location['location']}: "
+                f"суша до порту {port} — ${inland}, море до Клайпеди — ${suv}. "
+                f"Разом ${inland + suv}. Це лише доставка суша + море. "
+                "Комплекс послуг, митне оформлення та інші витрати — окремо.")
     if passenger:
         return (f"З Copart {location['location']} до порту {port} наземна доставка — "
                 f"${inland}, далі до Клайпеди за тарифом для легкового авто — "
