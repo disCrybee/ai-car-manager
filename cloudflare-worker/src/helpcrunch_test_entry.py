@@ -247,9 +247,6 @@ class Default(WorkerEntrypoint):
             metadata = plan["metadata"]
             # Pilot is off unless deliberately enabled via Worker secret/variable.
             pilot_flag = str(getattr(self.env, "HELPCRUNCH_PILOT_ENABLED", "") or "")
-            if pilot_flag == "true" and str(metadata.get("chat_id")) != "60354":
-                # Ignore all other chats without storing their data.
-                return Response.json({"ok": True, "mode": "pilot-other-chat-ignored"})
             if enabled_for_event(metadata, pilot_flag):
                 db = getattr(self.env, "HC_DB", None)
                 groq_key = str(getattr(self.env, "GROQ_API_KEY", "") or "")
