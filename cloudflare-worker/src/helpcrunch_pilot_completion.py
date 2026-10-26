@@ -53,3 +53,13 @@ async def pilot_clear_done(db):
     await db.prepare(
         "DELETE FROM hc_dialog_state WHERE chat_id = ? AND application_id = ?"
     ).bind(DONE_CHAT, DONE_APPLICATION).run()
+
+QUESTION_WORDS = ("скільки", "доставка", "кошту", "вартіст", "ціна", "термін", "строк", "коли", "як ", "чи ", "де ")
+
+def is_substantive_followup(text):
+    if not isinstance(text, str):
+        return False
+    value = text.strip().casefold()
+    return bool(value and (is_new_vehicle_request(value) or
+           ("?" in value and len(value) >= 12) or
+           any(word in value for word in QUESTION_WORDS)) and not contains_phone(value))
