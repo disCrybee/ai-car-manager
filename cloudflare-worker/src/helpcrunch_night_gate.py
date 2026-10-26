@@ -30,6 +30,4 @@ def night_preview_decision(metadata, enabled, brand, *, now=None):
         return {"eligible": False, "reason": "disabled"}
     if not eligible_night_event(metadata, enabled, now=now):
         return {"eligible": False, "reason": "outside-window-or-invalid-event"}
-    if not brand:
-        return {"eligible": False, "reason": "unknown-brand"}
-    return {"eligible": True, "reason": "night-preview-only", "brand": brand}
+    return {"eligible": True, "reason": "night-preview-only", "brand": brand or "neutral"}
