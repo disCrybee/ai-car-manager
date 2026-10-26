@@ -31,3 +31,13 @@ def night_preview_decision(metadata, enabled, brand, *, now=None):
     if not eligible_night_event(metadata, enabled, now=now):
         return {"eligible": False, "reason": "outside-window-or-invalid-event"}
     return {"eligible": True, "reason": "night-preview-only", "brand": brand or "neutral"}
+
+
+def live_chat_allowed(chat_id, enabled, allowed_chat_id):
+    """Live sends require exact operator-approved single-chat allowlist."""
+    try:
+        return (enabled == "true" and int(chat_id) > 0
+                and str(chat_id) == str(allowed_chat_id)
+                and str(allowed_chat_id).isdigit())
+    except (TypeError, ValueError):
+        return False
