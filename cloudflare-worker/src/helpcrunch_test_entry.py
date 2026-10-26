@@ -36,7 +36,11 @@ class Default(WorkerEntrypoint):
             token = str(getattr(self.env, "HELPCRUNCH_DEMO_TOKEN", "") or "")
             supplied = request.headers.get("Authorization", "")
             if not token or not hmac.compare_digest(supplied, "Bearer " + token):
-                return Response("Unauthorized", status=401)
+                return Response.json({
+                    "ok": False, "error": "Unauthorized",
+                    "authorization_present": bool(supplied),
+                    "bearer_scheme": supplied.startswith("Bearer "),
+                }, status=401)
             api_key = str(getattr(self.env, "GROQ_API_KEY", "") or "")
             if not api_key:
                 return Response.json({"ok": False, "error": "Groq secret is not configured"}, status=503)
