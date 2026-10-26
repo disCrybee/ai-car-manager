@@ -31,6 +31,6 @@ class NightDispatchTests(unittest.IsolatedAsyncioTestCase):
         self.env.HELPCRUNCH_NIGHT_ENABLED="true"
         result=await process_night_event(self.meta,"Доброго вечора",env=self.env,
             brand=None,now=datetime(2026,10,26,23,tzinfo=K),live=True)
-        self.assertEqual(result["mode"],"night-unknown-brand")
+        self.assertEqual(result["mode"],"night-not-configured")
 
 if __name__=="__main__":unittest.main()
