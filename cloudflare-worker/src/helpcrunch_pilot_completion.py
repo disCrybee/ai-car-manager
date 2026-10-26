@@ -56,12 +56,19 @@ async def pilot_clear_done(db):
         "DELETE FROM hc_dialog_state WHERE chat_id = ? AND application_id = ?"
     ).bind(DONE_CHAT, DONE_APPLICATION).run()
 
-QUESTION_WORDS = ("скільки", "доставка", "кошту", "вартіст", "ціна", "термін", "строк", "коли", "як ", "чи ", "де ")
+COURTESY = ("дякую", "спасибі", "очікую", "чекаю", "ок", "окей", "добре", "зрозуміло", "до побачення", "гарного дня")
 
 def is_substantive_followup(text):
+    """In the pilot, respond to any actual message except brief closing courtesies."""
     if not isinstance(text, str):
         return False
-    value = text.strip().casefold()
-    return bool(value and (is_new_vehicle_request(value) or
-           ("?" in value and len(value) >= 12) or
-           any(word in value for word in QUESTION_WORDS)) and not contains_phone(value))
+    value = text.strip().casefold().strip(" .,!?:;")
+    if not value:
+        return False
+    if is_new_vehicle_request(value) or "?" in value:
+        return True
+    if value in COURTESY or any(value.startswith(x + ",") for x in COURTESY):
+        return False
+    if len(value) <= 45 and all(w in COURTESY for w in value.replace(",", " ").split()):
+        return False
+    return True
