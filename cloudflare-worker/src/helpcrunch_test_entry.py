@@ -307,11 +307,14 @@ class Default(WorkerEntrypoint):
             # agent takeover without sending a customer-facing message.
             if (str(metadata.get("chat_id")) != "60354"
                     and metadata["night_rollout"]["eligible"]):
+                # Sending requires BOTH independent night flags and a mapped brand.
+                # Enabling the flags is a separate operator action after validation.
+                live_enabled = str(getattr(self.env, "HELPCRUNCH_NIGHT_SEND_ENABLED", "") or "") == "true"
                 outcome = await process_night_event(
                     metadata, json.loads(raw)["eventData"]["message"].get("text"),
-                    env=self.env, brand=metadata["brand"], live=False,
+                    env=self.env, brand=metadata["brand"], live=live_enabled,
                 )
-                metadata["night_shadow"] = outcome.get("mode")
+                metadata["night_result"] = outcome.get("mode")
         except (TypeError, ValueError):
             return Response("Bad Request", status=400)
         # Dry-run planning only: no message text in logs or responses.
