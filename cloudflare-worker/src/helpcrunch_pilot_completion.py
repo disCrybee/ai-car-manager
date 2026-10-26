@@ -5,7 +5,7 @@ here; HelpCrunch already contains the client's message.
 """
 import re
 
-PHONE = re.compile(r"(?<!\d)(?:\+?\d[\d\s()\-]{7,18}\d)(?!\d)")
+PHONE = re.compile(r"(?<!\\d)(?:\\+\\d[\\d\\s()\\-]{8,20}\\d|0\\d[\\d\\s()\\-]{7,18}\\d)(?!\\d)")
 DONE_APPLICATION = -2
 DONE_CHAT = 60354
 ACK = "Дякую! Ваш номер отримав. Менеджер зв'яжеться з Вами найближчим часом."
