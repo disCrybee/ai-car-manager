@@ -48,8 +48,6 @@ async def process_night_event(metadata, incoming, *, env, brand, now=None,
     now = now or datetime.now(KYIV)
     if enabled != "true" or not is_night(now):
         return {"mode": "night-off"}
-    if not brand:
-        return {"mode": "night-unknown-brand"}
     if not isinstance(incoming, str) or not 1 <= len(incoming.strip()) <= 1000:
         return {"mode": "night-invalid-content"}
     db = getattr(env, "HC_DB", None)
@@ -61,6 +59,7 @@ async def process_night_event(metadata, incoming, *, env, brand, now=None,
     if history_response is None:
         # 100 is the documented maximum; do not silently trust 20 recent messages.
         history_response = await get_chat_messages(api_key, chat, limit=100)
+    brand = "Neutral Automotive Consultant"
     review = await evaluate_night_chat(metadata, enabled, brand, db, history_response,
                                        shift_started=shift_start_timestamp(now), now=now)
     if not review["eligible"]:
