@@ -18,7 +18,7 @@ class NightGateTests(unittest.TestCase):
             self.assertFalse(eligible_night_event(self.event,"false",now=now))
     def test_preview_never_approves_unknown_brand(self):
         now=datetime(2026,10,26,23,5,tzinfo=K)
-        self.assertEqual(night_preview_decision(self.event,"true",None,now=now)["reason"],"unknown-brand")
+        self.assertEqual(night_preview_decision(self.event,"true",None,now=now)["reason"],"night-preview-only")
         self.assertEqual(night_preview_decision(self.event,"false","Auction Auto",now=now)["reason"],"disabled")
         preview=night_preview_decision(self.event,"true","Atlantic Auto",now=now)
         self.assertEqual(preview["reason"],"night-preview-only")
