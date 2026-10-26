@@ -16,5 +16,8 @@
       "database_id": "d726c736-2efa-4944-a98f-f6efe26a5c00",
       "migrations_dir": "migrations/helpcrunch"
     }
-  ]
+  ],
+  "vars": {
+    "HELPCRUNCH_PILOT_ENABLED": "true"
+  }
 }
