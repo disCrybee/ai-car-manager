@@ -37,6 +37,10 @@ class DemoMemoryTests(unittest.IsolatedAsyncioTestCase):
         self.assertLess(demo_chat_id("demo12345", "secret"), 0)
         self.assertIn((demo_chat_id("demo12345", "secret"), DEMO_APPLICATION), db.items)
 
+    async def test_demo_ids_fit_js_safe_integer(self):
+        for name in ("bmw-test-debug-01", "demo12345", "another-session-2026"):
+            self.assertLess(abs(demo_chat_id(name, "secret")), 2**53)
+
     async def test_reject_bad_id_and_system_role(self):
         db = Database()
         with self.assertRaises(ValueError):
