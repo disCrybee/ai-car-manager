@@ -34,3 +34,22 @@ async def pilot_mark_done(db):
         "INSERT OR IGNORE INTO hc_dialog_state(chat_id, application_id, state_json) "
         "VALUES (?, ?, ?)"
     ).bind(DONE_CHAT, DONE_APPLICATION, '{"completed":true}').run()
+
+# A completed lead can start a new request when a concrete new vehicle is named.
+# Short thanks or waiting acknowledgements must remain silent.
+NEW_REQUEST = re.compile(
+    r"(?i)\\b(?:tesla|bmw|audi|volkswagen|vw|mercedes|toyota|honda|"
+    r"skoda|porsche|ford|hyundai|kia|lexus|mazda|nissan|volvo|"
+    r"renault|peugeot|citroen|land rover|range rover)\\b"
+)
+
+def is_new_vehicle_request(text):
+    if not isinstance(text, str):
+        return False
+    return bool(NEW_REQUEST.search(text.strip())) and not contains_phone(text)
+
+
+async def pilot_clear_done(db):
+    await db.prepare(
+        "DELETE FROM hc_dialog_state WHERE chat_id = ? AND application_id = ?"
+    ).bind(DONE_CHAT, DONE_APPLICATION).run()
