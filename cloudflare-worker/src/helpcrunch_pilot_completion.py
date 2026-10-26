@@ -38,9 +38,9 @@ async def pilot_mark_done(db):
 # A completed lead can start a new request when a concrete new vehicle is named.
 # Short thanks or waiting acknowledgements must remain silent.
 NEW_REQUEST = re.compile(
-    r"(?i)\\b(?:tesla|bmw|audi|volkswagen|vw|mercedes|toyota|honda|"
+    r"(?i)\b(?:tesla|bmw|audi|volkswagen|vw|mercedes|toyota|honda|"
     r"skoda|porsche|ford|hyundai|kia|lexus|mazda|nissan|volvo|"
-    r"renault|peugeot|citroen|land rover|range rover)\\b"
+    r"renault|peugeot|citroen|land rover|range rover)\b"
 )
 
 def is_new_vehicle_request(text):
