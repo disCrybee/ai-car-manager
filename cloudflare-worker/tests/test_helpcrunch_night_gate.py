@@ -4,7 +4,7 @@ from zoneinfo import ZoneInfo
 from pathlib import Path
 from sys import path
 path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from helpcrunch_night_gate import eligible_night_event, night_preview_decision
+from helpcrunch_night_gate import eligible_night_event, night_preview_decision, live_chat_allowed
 
 K = ZoneInfo("Europe/Kyiv")
 class NightGateTests(unittest.TestCase):
@@ -23,6 +23,13 @@ class NightGateTests(unittest.TestCase):
         preview=night_preview_decision(self.event,"true","Atlantic Auto",now=now)
         self.assertEqual(preview["reason"],"night-preview-only")
         self.assertTrue(preview["eligible"])
+
+    def test_live_is_one_chat_only(self):
+        self.assertTrue(live_chat_allowed(60359, "true", "60359"))
+        self.assertFalse(live_chat_allowed(60358, "true", "60359"))
+        self.assertFalse(live_chat_allowed(60359, "false", "60359"))
+        self.assertFalse(live_chat_allowed(60359, "true", ""))
+        self.assertFalse(live_chat_allowed(60359, "true", None))
 
     def test_non_customer_event_and_bad_ids(self):
         now=datetime(2026,10,26,23,0,tzinfo=K)
