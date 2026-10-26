@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 import hmac
 import json
 from helpcrunch_groq import generate_reply
+from helpcrunch_api import list_agents, manager_candidates
 from helpcrunch_demo_memory import load_demo_history, save_demo_history
 from helpcrunch_webhook import describe_event, verify_signature
 from helpcrunch_brands import configured_brands, brand_for_application
@@ -31,6 +32,23 @@ class Default(WorkerEntrypoint):
                 "demo_token_configured": bool(str(getattr(self.env, "HELPCRUNCH_DEMO_TOKEN", "") or "")),
                 "groq_key_configured": bool(str(getattr(self.env, "GROQ_API_KEY", "") or ""))
             })
+        if path == "/demo-helpcrunch-agents":
+            if request.method != "GET":
+                return Response("Method Not Allowed", status=405)
+            token = str(getattr(self.env, "HELPCRUNCH_DEMO_TOKEN", "") or "")
+            supplied = request.headers.get("Authorization", "")
+            if not token or not hmac.compare_digest(supplied, "Bearer " + token):
+                return Response("Unauthorized", status=401)
+            api_key = str(getattr(self.env, "HELPCRUNCH_API_KEY", "") or "")
+            if not api_key:
+                return Response.json({"ok": False, "error": "HelpCrunch API not configured"}, status=503)
+            try:
+                candidates = manager_candidates(await list_agents(api_key))
+                return Response.json({"ok": True, "candidates": candidates,
+                                      "outbound_enabled": False})
+            except Exception as exc:
+                print("HelpCrunch agent lookup failure", type(exc).__name__)
+                return Response.json({"ok": False, "error": "Agent lookup failed"}, status=502)
         if path == "/demo-groq":
             if request.method != "POST":
                 return Response("Method Not Allowed", status=405)
