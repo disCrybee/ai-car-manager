@@ -2,7 +2,7 @@ import unittest
 from pathlib import Path
 from sys import path
 path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from helpcrunch_pilot_completion import contains_phone, ACK, pilot_is_done, pilot_mark_done, is_new_vehicle_request, pilot_clear_done
+from helpcrunch_pilot_completion import contains_phone, ACK, pilot_is_done, pilot_mark_done, is_new_vehicle_request, is_substantive_followup, pilot_clear_done
 
 class Statement:
     def __init__(self, db, sql):
@@ -33,6 +33,12 @@ class CompletionTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(is_new_vehicle_request("Цікавить Audi Q7"))
         self.assertFalse(is_new_vehicle_request("Дякую, очікую"))
         self.assertFalse(is_new_vehicle_request("0971222739"))
+
+    def test_substantive_followup_after_phone(self):
+        self.assertTrue(is_substantive_followup("А скільки буде вартувати доставка?"))
+        self.assertTrue(is_substantive_followup("Tesla Model S Plaid"))
+        self.assertFalse(is_substantive_followup("Дякую, очікую"))
+        self.assertFalse(is_substantive_followup("Дякую!"))
 
     async def test_durable_completion(self):
         db = Db()
