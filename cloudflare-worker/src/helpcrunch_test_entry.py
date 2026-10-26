@@ -5,6 +5,7 @@ import hmac
 import json
 from helpcrunch_groq import generate_reply
 from helpcrunch_shipping_lookup import shipping_context, confirmed_route_reply
+from helpcrunch_budget_guard import fresh_consultation, low_usd_budget_reply
 from helpcrunch_api import list_agents, manager_candidates, get_chat_messages, send_test_message
 from helpcrunch_demo_memory import load_demo_history, save_demo_history, demo_chat_id, DEMO_APPLICATION
 from helpcrunch_webhook import describe_event, verify_signature
@@ -258,7 +259,7 @@ class Default(WorkerEntrypoint):
                 payload = json.loads(raw)
                 incoming = payload["eventData"]["message"]["text"]
                 completed = await pilot_is_done(db)
-                restarting = completed and is_new_vehicle_request(incoming)
+                restarting = fresh_consultation(incoming) or (completed and is_new_vehicle_request(incoming))
                 followup = completed and is_substantive_followup(incoming)
                 if completed and not followup:
                     return Response.json({"ok": True, "mode": "pilot-completed-silent"})
@@ -277,7 +278,9 @@ class Default(WorkerEntrypoint):
                         await pilot_mark_done(db)
                         answer = ACK
                     else:
-                        answer = confirmed_route_reply(turns)
+                        answer = low_usd_budget_reply(incoming) if restarting else None
+                        if answer is None:
+                            answer = confirmed_route_reply(turns)
                         if answer is None:
                             answer = await generate_reply(groq_key, "Auction Auto", turns,
                                                           company_context=shipping_context(turns))
