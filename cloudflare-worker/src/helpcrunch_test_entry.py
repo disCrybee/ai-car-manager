@@ -4,7 +4,7 @@ from urllib.parse import urlparse
 import hmac
 import json
 from helpcrunch_groq import generate_reply
-from helpcrunch_api import list_agents, manager_candidates
+from helpcrunch_api import list_agents, manager_candidates, get_chat_messages
 from helpcrunch_demo_memory import load_demo_history, save_demo_history
 from helpcrunch_webhook import describe_event, verify_signature
 from helpcrunch_brands import configured_brands, brand_for_application
@@ -49,6 +49,29 @@ class Default(WorkerEntrypoint):
             except Exception as exc:
                 print("HelpCrunch agent lookup failure", type(exc).__name__)
                 return Response.json({"ok": False, "error": "Agent lookup failed"}, status=502)
+        if path == "/demo-helpcrunch-chat-check":
+            if request.method != "GET":
+                return Response("Method Not Allowed", status=405)
+            token = str(getattr(self.env, "HELPCRUNCH_DEMO_TOKEN", "") or "")
+            if not token or not hmac.compare_digest(
+                request.headers.get("Authorization", ""), "Bearer " + token
+            ):
+                return Response("Unauthorized", status=401)
+            api_key = str(getattr(self.env, "HELPCRUNCH_API_KEY", "") or "")
+            if not api_key:
+                return Response.json({"ok": False, "error": "HelpCrunch API not configured"}, status=503)
+            try:
+                # Fixed approved test chat; never accept an arbitrary user-supplied ID.
+                data = await get_chat_messages(api_key, 60354)
+                if not isinstance(data, (dict, list)):
+                    raise ValueError("Unexpected HelpCrunch response")
+                return Response.json({
+                    "ok": True, "chat_id": 60354, "agent_id": 21,
+                    "read_access": True, "outbound_enabled": False,
+                })
+            except Exception as exc:
+                print("HelpCrunch test chat read failed", type(exc).__name__)
+                return Response.json({"ok": False, "error": "Chat read failed"}, status=502)
         if path == "/demo-groq":
             if request.method != "POST":
                 return Response("Method Not Allowed", status=405)
