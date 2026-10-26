@@ -22,3 +22,14 @@ def eligible_night_event(metadata, enabled, *, now=None):
         )
     except (ValueError, TypeError):
         return False
+
+
+def night_preview_decision(metadata, enabled, brand, *, now=None):
+    """Non-sending decision for rollout auditing; never authorizes outbound alone."""
+    if enabled != "true":
+        return {"eligible": False, "reason": "disabled"}
+    if not eligible_night_event(metadata, enabled, now=now):
+        return {"eligible": False, "reason": "outside-window-or-invalid-event"}
+    if not brand:
+        return {"eligible": False, "reason": "unknown-brand"}
+    return {"eligible": True, "reason": "night-preview-only", "brand": brand}
