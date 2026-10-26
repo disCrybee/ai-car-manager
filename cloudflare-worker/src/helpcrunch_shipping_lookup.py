@@ -47,21 +47,45 @@ def shipping_context(history):
             "а повний кошторис запропонуй уточнити з менеджером.")
 
 def confirmed_route_reply(history):
-    """Give a grounded quote deterministically, not at LLM discretion."""
+    """Deterministic separate land and Klaipeda port tariff figures."""
     if not history or history[-1].get("role") != "user":
         return None
     latest = history[-1].get("content", "")
     if not any(word in latest.casefold() for word in ("достав", "shipping", "перевез")):
         return None
-    context = shipping_context(history)
-    if not context.startswith("ВНУТРІШНІ ДОВІДКОВІ ТАРИФИ"):
+    user_text = " ".join(t.get("content", "") for t in history[-12:]
+                         if t.get("role") == "user")
+    text = re.sub(r"[^A-Z0-9]+", " ", user_text.upper())
+    lower = user_text.casefold()
+    auction = "Copart" if "copart" in lower or "копарт" in lower else (
+        "IAAI" if "iaai" in lower or "iaa " in lower else None)
+    if not auction:
         return None
-    # Context is derived only from numeric verified sheet rows.
-    details = context.split("перевезення до порту: ", 1)[-1].split(". Ціни орієнтовні", 1)[0]
-    if not details or "доставка від локації" not in details:
+    matched = []
+    for item in RATES[auction]["locations"]:
+        name = re.sub(r"[^A-Z0-9]+", " ", item["location"].upper()).strip()
+        if len(name) >= 7 and (" " + name + " ") in (" " + text + " "):
+            matched.append(item)
+    if len(matched) != 1 or len(matched[0]["routes"]) != 1:
         return None
-    details = details.replace(" (доставка від локації до порту США)", "")
-    return ("За нашим прайсом перевезення від зазначеної аукціонної локації "
-            "до порту відправлення: " + details.rstrip(".") + ". "
-            "Це лише наземна доставка до порту, не повна вартість доставки в Україну. "
-            "Морське перевезення та інші витрати менеджер розрахує окремо.")
+    location = matched[0]
+    route = location["routes"][0]
+    port = route["port"]
+    inland = route["price"]
+    rates = RATES[auction]["vehicle_rates"]
+    sedan = rates["Small vehicle/Coupe/Sedan"].get(port)
+    suv = rates["Crossover/SUV/Standard Truck"].get(port)
+    if not all(isinstance(v, (int, float)) for v in (inland, sedan, suv)):
+        return None
+    return (
+        f"За нашим прайсом для {auction} {location['location']}: "
+        f"наземна доставка до порту {port} — ${inland}. "
+        f"Тариф від {port} до Клайпеди для легкового авто — ${sedan}, "
+        f"для SUV/кросовера — ${suv}. "
+        f"Разом ці дві складові: ${inland + sedan} для легкового "
+        f"або ${inland + suv} для SUV. "
+        "Точну категорію авто потрібно підтвердити; для електро/гібридів "
+        "та інших випадків можуть діяти додаткові збори. "
+        "Це орієнтовні тарифи за таблицею, без гарантії актуальності "
+        "та без митного оформлення й інших додаткових витрат."
+    )
