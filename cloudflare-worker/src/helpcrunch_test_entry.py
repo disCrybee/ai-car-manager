@@ -45,6 +45,7 @@ class Default(WorkerEntrypoint):
             api_key = str(getattr(self.env, "GROQ_API_KEY", "") or "")
             if not api_key:
                 return Response.json({"ok": False, "error": "Groq secret is not configured"}, status=503)
+            stage = "input"
             try:
                 raw_demo = await request.text()
                 if len(raw_demo) > 6000:
@@ -59,10 +60,13 @@ class Default(WorkerEntrypoint):
                 db = getattr(self.env, "HC_DB", None)
                 if session is not None and db is None:
                     return Response.json({"ok": False, "error": "Demo memory unavailable"}, status=503)
+                stage = "memory_read"
                 history = await load_demo_history(db, session, token) if session is not None else []
                 messages = history + [{"role": "user", "content": user_text}]
+                stage = "groq"
                 reply = await generate_reply(api_key, None, messages)
                 if session is not None:
+                    stage = "memory_write"
                     await save_demo_history(db, session, token, messages + [
                         {"role": "assistant", "content": reply}
                     ])
@@ -71,8 +75,8 @@ class Default(WorkerEntrypoint):
             except (ValueError, TypeError):
                 return Response("Bad Request", status=400)
             except Exception:
-                print("HelpCrunch isolated Groq demo failed")
-                return Response.json({"ok": False, "error": "Generation failed"}, status=502)
+                print("HelpCrunch isolated demo stage failed:", stage)
+                return Response.json({"ok": False, "error": "Generation failed", "stage": stage}, status=502)
         if path != "/helpcrunch-webhook":
             return Response("Not Found", status=404)
         if request.method != "POST":
