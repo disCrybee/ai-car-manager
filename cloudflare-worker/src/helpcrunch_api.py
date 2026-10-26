@@ -28,6 +28,24 @@ async def list_agents(api_key: str):
     return await _request(api_key, "GET", "/agents?limit=100")
 
 
+def manager_candidates(response: dict) -> list:
+    """Return matching agent names and IDs, never emails."""
+    agents = response.get("data", [])
+    if not isinstance(agents, list):
+        raise ValueError("Invalid agents response")
+    names = ("андрій", "андрей", "andrii", "andriy", "andrey", "andrew")
+    result = []
+    for item in agents:
+        if not isinstance(item, dict):
+            continue
+        name = item.get("name", "")
+        number = item.get("id")
+        if isinstance(name, str) and any(x in name.casefold() for x in names):
+            if isinstance(number, int) and number > 0:
+                result.append({"id": number, "name": name})
+    return result
+
+
 async def list_applications(api_key: str):
     return await _request(api_key, "GET", "/applications?limit=100")
 
