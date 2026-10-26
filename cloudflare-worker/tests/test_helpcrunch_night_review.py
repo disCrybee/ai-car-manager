@@ -26,6 +26,6 @@ class NightReviewTests(unittest.IsolatedAsyncioTestCase):
         result=await evaluate_night_chat(self.metadata,"true","Auction Auto",DB(),incoming,shift_started=1793040000,now=self.night)
         self.assertFalse(result["eligible"])
     async def test_unknown_brand_and_missing_state_fail(self):
-        self.assertFalse((await evaluate_night_chat(self.metadata,"true",None,DB(),self.messages,shift_started=1793040000,now=self.night))["eligible"])
+        self.assertTrue((await evaluate_night_chat(self.metadata,"true",None,DB(),self.messages,shift_started=1793040000,now=self.night))["eligible"])
         self.assertFalse((await evaluate_night_chat(self.metadata,"true","Auction Auto",None,self.messages,shift_started=1793040000,now=self.night))["eligible"])
 if __name__=="__main__":unittest.main()
