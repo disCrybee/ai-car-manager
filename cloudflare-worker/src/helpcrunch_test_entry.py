@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 import hmac
 import json
 from helpcrunch_groq import generate_reply
+from helpcrunch_demo_memory import load_demo_history, save_demo_history
 from helpcrunch_webhook import describe_event, verify_signature
 from helpcrunch_brands import configured_brands, brand_for_application
 from helpcrunch_planner import plan_incoming
@@ -54,9 +55,19 @@ class Default(WorkerEntrypoint):
                 user_text = incoming.get("text")
                 if not isinstance(user_text, str) or not 1 <= len(user_text.strip()) <= 1000:
                     raise ValueError("Invalid text")
-                # No arbitrary site identity, chat IDs, history or CRM data in demo.
-                reply = await generate_reply(api_key, None, [{"role": "user", "content": user_text}])
-                return Response.json({"ok": True, "reply": reply, "mode": "isolated-demo"})
+                session = incoming.get("session")
+                db = getattr(self.env, "HC_DB", None)
+                if session is not None and db is None:
+                    return Response.json({"ok": False, "error": "Demo memory unavailable"}, status=503)
+                history = await load_demo_history(db, session, token) if session is not None else []
+                messages = history + [{"role": "user", "content": user_text}]
+                reply = await generate_reply(api_key, None, messages)
+                if session is not None:
+                    await save_demo_history(db, session, token, messages + [
+                        {"role": "assistant", "content": reply}
+                    ])
+                return Response.json({"ok": True, "reply": reply, "mode": "isolated-demo",
+                                      "memory_enabled": session is not None})
             except (ValueError, TypeError):
                 return Response("Bad Request", status=400)
             except Exception:
