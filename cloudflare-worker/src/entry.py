@@ -1,5 +1,8 @@
 from urllib.parse import urlparse
 
+from helpcrunch_webhook import describe_event, verify_signature
+from helpcrunch_brands import configured_brands, brand_for_application
+
 from workers import WorkerEntrypoint, Response
 
 from ai_engine import classify_body_type, consult, extract_slots
@@ -201,6 +204,28 @@ async def _handle_lead_contact(
 class Default(WorkerEntrypoint):
     async def fetch(self, request):
         path = urlparse(request.url).path
+
+        if path == "/helpcrunch-webhook":
+            if request.method != "POST":
+                return Response("Method Not Allowed", status=405)
+            # Receive-only: no outgoing HelpCrunch API calls and no AI messages.
+            signing_key = str(getattr(self.env, "HELPCRUNCH_WEBHOOK_SIGNING_KEY", "") or "")
+            application_id = getattr(self.env, "HELPCRUNCH_APPLICATION_ID", None)
+            if not signing_key:
+                return Response("Not Configured", status=503)
+            try:
+                raw_body = (await request.text()).encode("utf-8")
+                signature = request.headers.get("X-HelpCrunch-Signature", "")
+                if not verify_signature(raw_body, signing_key, signature):
+                    return Response("Unauthorized", status=401)
+                result = describe_event(raw_body, application_id=int(application_id) if application_id else None)
+                brands = configured_brands(str(getattr(self.env, "HELPCRUNCH_BRANDS_JSON", "") or ""))
+                result["brand"] = brand_for_application(result["application_id"], brands)
+            except (ValueError, TypeError):
+                return Response("Bad Request", status=400)
+            # Intentionally no customer text, names, phone numbers or email in logs.
+            print("HELPCRUNCH RECEIVED", result)
+            return Response.json({"ok": True, "mode": "receive-only"})
 
         if path == "/health":
             try:
