@@ -16,6 +16,7 @@ from helpcrunch_pilot_completion import contains_phone, pilot_is_done, pilot_mar
 from helpcrunch_preview_pipeline import process_preview
 from helpcrunch_night_gate import night_preview_decision
 from helpcrunch_night_dispatch import process_night_event
+from helpcrunch_quality import quality_summary
 
 
 class Default(WorkerEntrypoint):
@@ -41,6 +42,20 @@ class Default(WorkerEntrypoint):
                 "pilot_binding_present": getattr(self.env, "HELPCRUNCH_PILOT_ENABLED", None) is not None,
                 "pilot_binding_type": type(getattr(self.env, "HELPCRUNCH_PILOT_ENABLED", None)).__name__
             })
+        if path == "/helpcrunch-quality-summary":
+            if request.method != "GET":
+                return Response("Method Not Allowed", status=405)
+            token = str(getattr(self.env, "HELPCRUNCH_DEMO_TOKEN", "") or "")
+            if not token or not hmac.compare_digest(request.headers.get("Authorization", ""), "Bearer " + token):
+                return Response("Unauthorized", status=401)
+            db = getattr(self.env, "HC_DB", None)
+            if db is None:
+                return Response.json({"ok": False, "error": "D1 unavailable"}, status=503)
+            try:
+                return Response.json({"ok": True, **(await quality_summary(db))})
+            except Exception as exc:
+                print("HelpCrunch quality summary failed", type(exc).__name__)
+                return Response.json({"ok": False, "error": "Quality summary unavailable"}, status=502)
         if path == "/demo-helpcrunch-agents":
             if request.method != "GET":
                 return Response("Method Not Allowed", status=405)
