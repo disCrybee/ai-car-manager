@@ -16,6 +16,7 @@ from helpcrunch_groq import generate_reply
 from helpcrunch_pilot_completion import contains_phone, ACK, is_substantive_followup
 from helpcrunch_night_completion import get_night_completion, set_night_completion
 from helpcrunch_store import claim_event
+from helpcrunch_quality import record_quality
 from helpcrunch_webhook import is_night
 
 KYIV = ZoneInfo("Europe/Kyiv")
@@ -159,4 +160,9 @@ async def process_night_event(metadata, incoming, *, env, brand, now=None,
     await save_night_history(db, chat, app, turns + [{"role":"assistant","content":answer}])
     if contains_phone(incoming) or restarting:
         await set_night_completion(db, chat, app, contains_phone(incoming))
+    # Analytics must never interrupt customer replies or cause a duplicate send.
+    try:
+        await record_quality(db, chat, app, msg, incoming, answer)
+    except Exception as exc:
+        print("HelpCrunch quality signal failed", type(exc).__name__)
     return {"mode":"night-replied", "chat_id":chat}
