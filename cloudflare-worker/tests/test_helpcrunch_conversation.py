@@ -23,6 +23,15 @@ class HelpCrunchConversationTests(unittest.TestCase):
         self.assertIn("Не використовуй фрази «Дякую за інтерес»", prompt)
         self.assertIn("не роби висновок, що це USD", prompt)
 
+    def test_mileage_and_optional_budget_rules(self):
+        prompt = helpcrunch_system_prompt(None)
+        self.assertIn("Пробіг — ОБОВ'ЯЗКОВИЙ ПУНКТ УТОЧНЕННЯ", prompt)
+        self.assertIn("БЮДЖЕТ НЕ Є ОБОВ'ЯЗКОВОЮ УМОВОЮ", prompt)
+        for phrase in ("просто цікавить вартість", "не знаю", "запропонуйте, а я подумаю"):
+            self.assertIn(phrase, prompt)
+        self.assertIn("не переходь одразу до телефона", prompt)
+        self.assertIn("максимум ОДНЕ запитання", prompt)
+
     def test_do_not_claim_unconfirmed_handoff(self):
         prompt = helpcrunch_system_prompt("Atlantic Express")
         self.assertIn("без фактичної передачі або підтвердження системи", prompt)
