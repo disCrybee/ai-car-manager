@@ -5,6 +5,7 @@ Phase 1 intentionally does not reply to customers.
 import hashlib
 import hmac
 import json
+from helpcrunch_media import has_media
 from datetime import datetime, time
 from zoneinfo import ZoneInfo
 
@@ -51,6 +52,7 @@ def describe_event(raw_body: bytes, application_id: int | None = None, now=None)
         "application_id": app_id,
         "target_application": allowed,
         "night": is_night(now),
+        "has_media": has_media(message),
         "would_process": bool(
             payload.get("event") == "message.chat.customer"
             and allowed
@@ -62,3 +64,4 @@ def describe_event(raw_body: bytes, application_id: int | None = None, now=None)
         ),
         "mode": "receive-only",
     }
+
