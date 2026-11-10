@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 from sys import path
 path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
@@ -6,6 +7,9 @@ from helpcrunch_test_dispatch import enabled_for_event, TEST_CHAT_ID
 
 class PilotGateTests(unittest.TestCase):
     def setUp(self):
+        clock = patch("helpcrunch_test_dispatch.is_night", return_value=True)
+        clock.start()
+        self.addCleanup(clock.stop)
         self.event = {"event":"message.chat.customer","chat_id":TEST_CHAT_ID,
                       "message_id":123,"application_id":456}
     def test_default_off(self):
@@ -25,3 +29,4 @@ class PilotGateTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

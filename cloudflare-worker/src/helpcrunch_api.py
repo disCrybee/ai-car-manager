@@ -3,6 +3,7 @@
 All write operations require explicit opt-in and exact test chat/agent IDs.
 """
 import json
+from helpcrunch_webhook import is_night
 
 API_BASE = "https://api.helpcrunch.com/v1"
 
@@ -16,6 +17,10 @@ async def _request(api_key: str, method: str, path: str, payload=None):
         headers["Content-Type"] = "application/json"
         options["body"] = json.dumps(payload, ensure_ascii=False)
     from workers import fetch
+    # Final boundary for every bot send, including pilot/manual test routes.
+    # Re-read the real Kyiv time after AI generation and other network requests.
+    if method.upper() == "POST" and path.split("?")[0].rstrip("/") == "/messages" and not is_night():
+        raise PermissionError("HelpCrunch replies are allowed only from 23:00 to 08:00 Europe/Kyiv")
     response = await fetch(API_BASE + path, **options)
     body = await response.text()
     if response.status < 200 or response.status >= 300:
@@ -82,3 +87,4 @@ async def send_test_message(api_key: str, chat_id: int, agent_id: int,
         allowed_agent_id=allowed_agent_id, enabled=enabled,
     )
     return await _request(api_key, "POST", "/messages", payload)
+
