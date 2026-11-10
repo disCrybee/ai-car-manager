@@ -18,6 +18,7 @@ from helpcrunch_night_completion import get_night_completion, set_night_completi
 from helpcrunch_store import claim_event
 from helpcrunch_quality import record_quality
 from helpcrunch_webhook import is_night
+from helpcrunch_media import has_media, media_reply
 
 KYIV = ZoneInfo("Europe/Kyiv")
 AGENT_ID = 21
@@ -94,8 +95,7 @@ async def process_night_event(metadata, incoming, *, env, brand, now=None,
     now = now or datetime.now(KYIV)
     if enabled != "true" or not is_night(now):
         return {"mode": "night-off"}
-    if not isinstance(incoming, str) or not 1 <= len(incoming.strip()) <= 1000:
-        return {"mode": "night-invalid-content"}
+    media = metadata.get("has_media") is True or has_media({"text": incoming})
     db = getattr(env, "HC_DB", None)
     api_key = str(getattr(env, "HELPCRUNCH_API_KEY", "") or "")
     groq_key = str(getattr(env, "GROQ_API_KEY", "") or "")
@@ -105,6 +105,18 @@ async def process_night_event(metadata, incoming, *, env, brand, now=None,
     if history_response is None:
         # 100 is the documented maximum; do not silently trust 20 recent messages.
         history_response = await get_chat_messages(api_key, chat, limit=100)
+    # Check only this event's message, never a previous customer's attachment.
+    if isinstance(history_response, dict) and isinstance(history_response.get("data"), list):
+        media = media or any(
+            isinstance(item, dict) and str(item.get("id")) == str(msg)
+            and item.get("from") == "customer" and has_media(item)
+            for item in history_response["data"]
+        )
+    if media:
+        incoming = incoming if isinstance(incoming, str) else ""
+        incoming = incoming[:1000]
+    elif not isinstance(incoming, str) or not 1 <= len(incoming.strip()) <= 1000:
+        return {"mode": "night-invalid-content"}
     brand = None
     review = await evaluate_night_chat(metadata, enabled, brand, db, history_response,
                                        shift_started=shift_start_timestamp(now), now=now)
@@ -112,19 +124,24 @@ async def process_night_event(metadata, incoming, *, env, brand, now=None,
         return {"mode": "night-blocked", "reason": review["reason"]}
     if not live or str(getattr(env, "HELPCRUNCH_NIGHT_SEND_ENABLED", "") or "") != "true":
         return {"mode": "night-shadow-ready", "brand": brand, "chat_id": chat}
-    if not groq_key:
+    if not groq_key and not media:
         return {"mode": "night-not-configured"}
     # A claimed event is never retried after uncertain third-party send.
     if not await claim_event(db, f"night:{app}:{chat}:{msg}", chat, app):
         return {"mode": "night-duplicate"}
     completed = await get_night_completion(db, chat, app)
-    restarting = fresh_consultation(incoming)
-    if completed and not restarting and not is_substantive_followup(incoming):
+    restarting = not media and fresh_consultation(incoming)
+    if completed and not media and not restarting and not is_substantive_followup(incoming):
         return {"mode": "night-completed-silent"}
     old = await load_night_history(db, chat, app)
     turns = ([] if restarting else old) + [
-        {"role": "user", "content": incoming}]
-    if contains_phone(incoming):
+        {"role": "user", "content": "[Клієнт надіслав вкладення]" if media else incoming}]
+    if media:
+        answer = media_reply(now, phone_received=bool(completed) or any(
+            turn.get("role") == "user" and contains_phone(turn.get("content"))
+            for turn in old
+        ))
+    elif contains_phone(incoming):
         answer = ACK
     else:
         answer = (low_usd_budget_reply(incoming) if fresh_consultation(incoming) else None)
@@ -158,7 +175,7 @@ async def process_night_event(metadata, incoming, *, env, brand, now=None,
     receipt = receipt_matches_chat(sent, chat)
     await record_bot_message_id(db, chat, app, receipt)
     await save_night_history(db, chat, app, turns + [{"role":"assistant","content":answer}])
-    if contains_phone(incoming) or restarting:
+    if (not media and contains_phone(incoming)) or restarting:
         await set_night_completion(db, chat, app, contains_phone(incoming))
     # Analytics must never interrupt customer replies or cause a duplicate send.
     try:
@@ -166,3 +183,4 @@ async def process_night_event(metadata, incoming, *, env, brand, now=None,
     except Exception as exc:
         print("HelpCrunch quality signal failed", type(exc).__name__)
     return {"mode":"night-replied", "chat_id":chat}
+
