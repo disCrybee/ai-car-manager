@@ -9,6 +9,7 @@
   "observability": {
     "enabled": true
   },
+  "triggers": {"crons": ["*/5 * * * *"]},
   "d1_databases": [
     {
       "binding": "HC_DB",
@@ -18,9 +19,11 @@
     }
   ],
   "vars": {
+    "HELPCRUNCH_LEARNING_ENABLED": "true",
     "HELPCRUNCH_PILOT_ENABLED": "false",
     "HELPCRUNCH_BRANDS_JSON": "{\"1\":\"Auction Auto\",\"3\":\"Atlantic Express\",\"4\":\"Atlantic Auto\",\"5\":\"Atlantic West\",\"6\":\"Atlantic Express\",\"7\":\"Atlantic Express\",\"8\":\"Atlantic Express\",\"9\":\"Auction Auto\",\"13\":\"AutoCanada\",\"15\":\"ID4\",\"16\":\"ID6\"}",
     "HELPCRUNCH_NIGHT_ENABLED": "true",
     "HELPCRUNCH_NIGHT_SEND_ENABLED": "true"
   }
 }
+
