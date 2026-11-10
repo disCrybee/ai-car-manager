@@ -19,6 +19,7 @@ from helpcrunch_store import claim_event
 from helpcrunch_quality import record_quality
 from helpcrunch_webhook import is_night
 from helpcrunch_media import has_media, media_reply
+from helpcrunch_learning import learned_context
 
 KYIV = ZoneInfo("Europe/Kyiv")
 AGENT_ID = 21
@@ -148,8 +149,10 @@ async def process_night_event(metadata, incoming, *, env, brand, now=None,
         if answer is None:
             answer = confirmed_route_reply(turns)
         if answer is None:
+            knowledge = await learned_context(env, app, incoming, now)
             answer = await generate_reply(groq_key, brand, turns,
-                                          company_context=shipping_context(turns))
+                                          company_context=shipping_context(turns),
+                                          learned_context=knowledge)
     if not is_night():
         return {"mode": "night-cutoff"}
     # Re-read to catch a manager reply while Groq was generating.
