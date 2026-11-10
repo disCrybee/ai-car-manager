@@ -17,9 +17,14 @@ from helpcrunch_preview_pipeline import process_preview
 from helpcrunch_night_gate import night_preview_decision
 from helpcrunch_night_dispatch import process_night_event
 from helpcrunch_quality import quality_summary
+from helpcrunch_learning import run_learning, learning_status
 
 
 class Default(WorkerEntrypoint):
+    async def scheduled(self, controller, env, ctx):
+        # Read-only HelpCrunch polling. No customer-message functions are called.
+        await run_learning(env)
+
     async def fetch(self, request):
         path = urlparse(request.url).path
         if path == "/health":
@@ -36,6 +41,8 @@ class Default(WorkerEntrypoint):
                 "ok": True, "service": "helpcrunch-test", "mode": "receive-only",
                 "memory_configured": db is not None,
                 "memory_readable": readable, "outbound_enabled": False,
+                "learning_enabled": str(getattr(self.env, "HELPCRUNCH_LEARNING_ENABLED", "")) == "true",
+                "learning": await learning_status(db) if db is not None else {"state": "not-configured"},
                 "demo_token_configured": bool(str(getattr(self.env, "HELPCRUNCH_DEMO_TOKEN", "") or "")),
                 "groq_key_configured": bool(str(getattr(self.env, "GROQ_API_KEY", "") or "")),
                 "pilot_enabled": str(getattr(self.env, "HELPCRUNCH_PILOT_ENABLED", "") or "").strip().lower() == "true",
@@ -331,3 +338,4 @@ class Default(WorkerEntrypoint):
         # No outbound message or AI call. D1 writes only if HC_DB is configured.
         print("HELPCRUNCH EVENT", metadata)
         return Response.json({"ok": True, "mode": "receive-only"})
+
