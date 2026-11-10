@@ -4,11 +4,14 @@ One exact customer chat; opt-in is disabled unless literal 'true'. Claim
 the event before any non-idempotent send to prevent webhook retry duplicates.
 """
 from helpcrunch_store import claim_event
+from helpcrunch_webhook import is_night
 
 TEST_CHAT_ID = 60354
 TEST_AGENT_ID = 21
 
-def enabled_for_event(metadata, flag):
+def enabled_for_event(metadata, flag, *, now=None):
+    if not is_night(now):
+        return False
     try:
         chat = int(metadata.get("chat_id") or 0)
         msg = int(metadata.get("message_id") or 0)
@@ -25,3 +28,4 @@ async def reserve_test_reply(db, metadata):
     app = int(metadata["application_id"])
     msg = int(metadata["message_id"])
     return await claim_event(db, f"auto60354:{app}:{msg}", TEST_CHAT_ID, app)
+
